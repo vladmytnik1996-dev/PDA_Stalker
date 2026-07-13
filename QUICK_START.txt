@@ -1,0 +1,22 @@
+STALKER PDA — БЫСТРЫЙ ЗАПУСК НА ANDROID
+
+1. Установите Termux из F-Droid или официального GitHub.
+2. Распакуйте папку stalker-pda-android-github-release в Download.
+3. В Termux выполните:
+
+   pkg update -y
+   pkg install python unzip -y
+   termux-setup-storage
+   cd ~/storage/downloads/stalker-pda-android-github-release
+   bash start-android.sh
+
+4. В Chrome откройте ИМЕННО:
+
+   http://localhost:8080/
+
+5. Не открывайте index.html через content:// или file://.
+6. Включите геолокацию Android, нажмите GPS и разрешите доступ.
+7. Загрузите карту, поставьте точку A, затем точку B.
+8. Данные → Экспорт — резервная копия JSON. Карта в JSON не входит.
+
+Полная инструкция: README.md, GUIDE_ANDROID.html и docs/ANDROID_SETUP.md

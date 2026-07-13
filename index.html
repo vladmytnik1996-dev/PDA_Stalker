@@ -1,0 +1,3704 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b120f">
+  <meta name="description" content="Однофайловый мобильный КПК: жёстко ограниченная карта, GPS-привязка, игровые метки, задания и заметки.">
+  <title>КПК Зоны — Release 6 Hard-Bound</title>
+  <style>
+    :root {
+      --bg: #050806;
+      --panel: rgba(16, 24, 20, 0.96);
+      --panel-soft: rgba(28, 41, 32, 0.92);
+      --panel-hard: rgba(7, 11, 9, 0.98);
+      --line: rgba(126, 255, 178, 0.22);
+      --line-strong: rgba(178, 255, 198, 0.58);
+      --text: #d3f8dc;
+      --muted: #83a98e;
+      --dim: #55735d;
+      --ok: #50ff8f;
+      --cyan: #35f3ff;
+      --amber: #d7b15d;
+      --danger: #ff6258;
+      --shadow: rgba(0, 0, 0, 0.68);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      color-scheme: dark;
+      font-family: "Trebuchet MS", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(86, 157, 92, 0.16), transparent 34%),
+        radial-gradient(circle at 100% 90%, rgba(205, 146, 64, 0.12), transparent 38%),
+        linear-gradient(135deg, #050806, #10140f 52%, #050806);
+      color: var(--text);
+    }
+
+    body {
+      display: grid;
+      min-height: 100dvh;
+      place-items: center;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button,
+    .file-btn {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app-shell {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      width: min(100vw, 560px);
+      height: 100dvh;
+      max-height: 980px;
+      overflow: hidden;
+      border: 1px solid rgba(154, 187, 160, 0.28);
+      background:
+        linear-gradient(135deg, rgba(59, 70, 60, 0.28), rgba(5, 8, 6, 0.98)),
+        var(--bg);
+      box-shadow: 0 0 48px var(--shadow), inset 0 0 34px rgba(79, 255, 145, 0.045);
+    }
+
+    .app-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px) 0 0 / 100% 4px,
+        radial-gradient(circle at 50% 12%, rgba(156,255,190,0.07), transparent 52%);
+      mix-blend-mode: screen;
+    }
+
+    .app-shell::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      z-index: 51;
+      pointer-events: none;
+      border: 2px solid rgba(191, 230, 181, 0.08);
+      border-radius: 18px;
+    }
+
+    .top-panel {
+      position: relative;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 13px 9px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(35, 50, 40, 0.99), rgba(13, 19, 16, 0.94));
+    }
+
+    .device-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .device-title strong {
+      display: block;
+      color: var(--ok);
+      font-size: 15px;
+      text-shadow: 0 0 9px rgba(80, 255, 143, 0.55);
+      white-space: nowrap;
+    }
+
+    .device-title small {
+      display: block;
+      width: min(46vw, 220px);
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .signal-dot {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      border: 2px solid rgba(193, 255, 205, 0.52);
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--ok) 0 28%, transparent 30% 100%);
+      box-shadow: 0 0 10px rgba(80, 255, 143, 0.74);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; transform: scale(0.92); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .top-actions,
+    .editor-actions,
+    .sheet-actions,
+    .filter-row,
+    .map-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-actions {
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .screen {
+      position: relative;
+      z-index: 20;
+      min-height: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(38, 255, 118, 0.04) 1px, transparent 1px),
+        linear-gradient(rgba(38, 255, 118, 0.035) 1px, transparent 1px),
+        rgba(7, 12, 9, 0.36);
+      background-size: 32px 32px;
+    }
+
+    .tab-panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .tab-panel.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bottom-nav {
+      position: relative;
+      z-index: 60;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      padding: 7px 8px calc(7px + var(--safe-bottom));
+      border-top: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(14, 23, 18, 0.98), rgba(6, 10, 8, 0.99));
+    }
+
+    .nav-btn,
+    .tool-btn,
+    .mini-btn,
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .icon-btn,
+    .chip,
+    .file-btn {
+      border: 1px solid rgba(143, 255, 183, 0.25);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(45, 63, 51, 0.92), rgba(18, 27, 22, 0.95));
+      color: var(--text);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.055em;
+      box-shadow: inset 0 0 16px rgba(80, 255, 143, 0.035);
+    }
+
+    .nav-btn {
+      min-height: 42px;
+      padding: 8px 6px;
+      font-size: 11px;
+    }
+
+    .nav-btn.active,
+    .chip.active,
+    .tool-btn.active,
+    .mini-btn.active,
+    .file-btn.active {
+      border-color: rgba(80, 255, 143, 0.66);
+      color: var(--ok);
+      text-shadow: 0 0 8px rgba(80, 255, 143, 0.38);
+      background: linear-gradient(180deg, rgba(31, 83, 48, 0.78), rgba(10, 24, 16, 0.98));
+      box-shadow: inset 0 0 18px rgba(80, 255, 143, 0.1), 0 0 0 1px rgba(80,255,143,0.08);
+    }
+
+    .tool-btn.mode-warning.active {
+      border-color: rgba(215, 177, 93, 0.78);
+      color: var(--amber);
+      text-shadow: 0 0 9px rgba(215, 177, 93, 0.42);
+      background: linear-gradient(180deg, rgba(94, 72, 30, 0.88), rgba(31, 24, 10, 0.98));
+    }
+
+    .mini-btn,
+    .tool-btn,
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .chip,
+    .file-btn {
+      min-height: 34px;
+      padding: 8px 10px;
+      font-size: 10px;
+    }
+
+    .tool-btn.square {
+      width: 36px;
+      padding-inline: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .primary-btn,
+    .file-btn.primary {
+      border-color: rgba(80, 255, 143, 0.56);
+      color: #ebfff0;
+      background: linear-gradient(180deg, rgba(55, 118, 69, 0.92), rgba(16, 48, 24, 0.97));
+    }
+
+    .secondary-btn,
+    .file-btn {
+      border-color: rgba(80, 226, 255, 0.32);
+      color: #d8fbff;
+    }
+
+    .danger-btn {
+      border-color: rgba(255, 98, 88, 0.42);
+      color: #ffd8d5;
+      background: linear-gradient(180deg, rgba(99, 37, 35, 0.92), rgba(43, 12, 12, 0.98));
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 50%;
+      color: var(--ok);
+      font-size: 21px;
+      line-height: 1;
+    }
+
+    button:disabled,
+    .file-btn.disabled {
+      cursor: not-allowed;
+      opacity: 0.44;
+    }
+
+    .file-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .wrap { flex-wrap: wrap; }
+
+    .map-toolbar {
+      z-index: 4;
+      flex-wrap: wrap;
+      padding: 10px 10px 6px;
+      border-bottom: 1px solid rgba(126, 255, 178, 0.14);
+      background: rgba(6, 10, 8, 0.5);
+    }
+
+    .hint-line {
+      padding: 5px 12px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hint-line.active {
+      color: var(--amber);
+      text-shadow: 0 0 8px rgba(215, 177, 93, 0.34);
+    }
+
+    .map-viewport {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      touch-action: none;
+      background:
+        radial-gradient(circle at 40% 50%, rgba(36, 73, 48, 0.34), transparent 38%),
+        #0b110e;
+      cursor: grab;
+    }
+
+    .map-viewport.placing { cursor: crosshair; }
+    .map-viewport.dragging { cursor: grabbing; }
+
+    .map-stage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1000px;
+      height: 1200px;
+      --marker-size: 16px;
+      --marker-font: 8px;
+      --marker-line: 1px;
+      --gps-size: 22px;
+      --anchor-size: 16px;
+      transform-origin: 0 0;
+      will-change: transform;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.72);
+      background:
+        linear-gradient(90deg, rgba(204,255,217,0.12) 1px, transparent 1px),
+        linear-gradient(rgba(204,255,217,0.12) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(58, 85, 63, 0.72), rgba(16, 26, 20, 0.95));
+      background-size: 72px 72px, 72px 72px, auto;
+    }
+
+    .zone-map {
+      position: absolute;
+      inset: 0;
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      user-select: none;
+      -webkit-user-drag: none;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      image-rendering: auto;
+      filter: none;
+    }
+
+    .zone-map.loaded { display: block; }
+
+    .map-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      text-align: center;
+      background:
+        radial-gradient(circle at center, rgba(80,255,143,0.1), transparent 38%),
+        repeating-linear-gradient(-35deg, rgba(255,255,255,0.025) 0 12px, rgba(0,0,0,0.08) 12px 24px);
+    }
+
+    .map-empty.hidden { display: none; }
+
+    .empty-card {
+      max-width: 330px;
+      border: 1px solid rgba(143, 255, 183, 0.22);
+      border-radius: 16px;
+      padding: 18px;
+      background: rgba(8, 13, 10, 0.86);
+      box-shadow: 0 18px 34px rgba(0,0,0,0.42);
+    }
+
+    .empty-card h2 {
+      margin: 0 0 9px;
+      color: var(--ok);
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .empty-card p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .marker-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .marker {
+      position: absolute;
+      width: var(--marker-size);
+      height: var(--marker-size);
+      transform: translate(-50%, -50%);
+      border: 0;
+      border-radius: 50%;
+      padding: 0;
+      background: transparent;
+      color: #d9fff1;
+      font-size: var(--marker-font);
+      font-family: var(--mono);
+      font-weight: 900;
+      line-height: 1;
+      pointer-events: auto;
+      filter: drop-shadow(0 0 3px rgba(78, 255, 177, 0.72));
+    }
+
+    .marker::before {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border: var(--marker-line) solid rgba(78, 255, 177, 0.96);
+      border-radius: 2px;
+      transform: rotate(45deg);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(121,255,177,0.16) 0 27%, rgba(8,28,18,0.68) 32% 100%);
+      box-shadow: inset 0 0 4px rgba(80,255,143,0.14), 0 0 5px rgba(80,255,143,0.34);
+    }
+
+    .marker::after {
+      content: attr(data-symbol);
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: currentColor;
+      text-shadow: 0 0 5px rgba(216,255,230,0.82);
+      transform: translateY(-2%);
+    }
+
+    .marker.type-main { color: #e4feff; filter: drop-shadow(0 0 4px rgba(53, 243, 255, 0.72)); }
+    .marker.type-main::before { border-color: rgba(53,243,255,0.98); background: radial-gradient(circle, rgba(53,243,255,0.2) 0 26%, rgba(6,36,40,0.78) 32% 100%); }
+    .marker.type-side { color: #d9fff1; filter: drop-shadow(0 0 3px rgba(80,255,143,0.62)); }
+    .marker.type-side::before { border-color: rgba(82,255,152,0.92); }
+    .marker.type-anomaly { color: #b8fff8; filter: drop-shadow(0 0 4px rgba(116,255,241,0.8)); }
+    .marker.type-anomaly::before { border-color: rgba(116,255,241,0.98); border-radius: 50%; transform: rotate(0deg); background: radial-gradient(circle, rgba(116,255,241,0.18) 0 22%, transparent 26% 43%, rgba(7,35,35,0.78) 48% 100%); }
+    .marker.type-stash { color: #ffe5a9; filter: drop-shadow(0 0 4px rgba(215,177,93,0.7)); }
+    .marker.type-stash::before { border-color: rgba(215,177,93,0.98); background: radial-gradient(circle, rgba(215,177,93,0.18) 0 26%, rgba(46,33,10,0.78) 32% 100%); }
+    .marker.type-transition { color: #c9f7ff; filter: drop-shadow(0 0 4px rgba(118,230,255,0.72)); }
+    .marker.type-transition::before { border-color: rgba(118,230,255,0.98); border-radius: 999px; transform: rotate(0deg); background: linear-gradient(90deg, rgba(7,34,40,0.72), rgba(55,215,255,0.16)); }
+    .marker.type-trader { color: #f2e5b5; filter: drop-shadow(0 0 4px rgba(236,196,104,0.7)); }
+    .marker.type-trader::before { border-color: rgba(236,196,104,0.98); border-radius: 3px; background: rgba(43,32,10,0.78); }
+    .marker.type-faction { color: #d8ffbe; filter: drop-shadow(0 0 4px rgba(180,255,130,0.68)); }
+    .marker.type-faction::before { border-color: rgba(180,255,130,0.96); background: rgba(24,42,12,0.78); }
+    .marker.type-danger { color: #ffd7d2; filter: drop-shadow(0 0 4px rgba(255,98,88,0.75)); }
+    .marker.type-danger::before { border-color: rgba(255,98,88,0.98); background: radial-gradient(circle, rgba(255,98,88,0.2) 0 26%, rgba(44,10,10,0.8) 32% 100%); }
+    .marker.type-lab { color: #e6d6ff; filter: drop-shadow(0 0 4px rgba(180,143,255,0.7)); }
+    .marker.type-lab::before { border-color: rgba(180,143,255,0.98); border-radius: 50%; transform: rotate(0deg); background: radial-gradient(circle, rgba(180,143,255,0.2) 0 24%, rgba(31,15,48,0.8) 31% 100%); }
+    .marker.type-note { color: #ddffb0; filter: drop-shadow(0 0 4px rgba(202,255,105,0.64)); }
+    .marker.type-note::before { border-color: rgba(202,255,105,0.96); background: radial-gradient(circle, rgba(202,255,105,0.16) 0 26%, rgba(33,45,10,0.78) 32% 100%); }
+    .marker.done { opacity: 0.54; filter: grayscale(0.72) drop-shadow(0 0 2px rgba(150, 255, 170, 0.3)); }
+    .marker.selected { z-index: 7; transform: translate(-50%, -50%) scale(1.18); }
+
+    .map-viewport.gps-binding { cursor: crosshair; }
+    .map-viewport.gps-binding .marker { pointer-events: none; }
+
+    .gps-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .gps-anchor {
+      position: absolute;
+      width: var(--anchor-size);
+      height: var(--anchor-size);
+      transform: translate(-50%, -50%);
+      border: var(--marker-line) solid rgba(53, 243, 255, 0.78);
+      border-radius: 2px;
+      background: rgba(7,38,43,0.72);
+      color: #d8fbff;
+      font-size: calc(var(--anchor-size) * 0.46);
+      font-family: var(--mono);
+      font-weight: 800;
+      line-height: var(--anchor-size);
+      text-align: center;
+      text-shadow: 0 0 7px rgba(53,243,255,0.9);
+      filter: drop-shadow(0 0 5px rgba(53,243,255,0.72));
+      box-shadow: inset 0 0 6px rgba(53,243,255,0.12);
+    }
+
+    .gps-anchor::before {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      border: 1px solid rgba(216,251,255,0.66);
+      transform: rotate(45deg);
+      opacity: 0.62;
+    }
+
+    .gps-accuracy {
+      position: absolute;
+      min-width: 16px;
+      min-height: 16px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(53, 243, 255, 0.34);
+      border-radius: 50%;
+      background: rgba(53, 243, 255, 0.045);
+      box-shadow: inset 0 0 18px rgba(53,243,255,0.035), 0 0 12px rgba(53,243,255,0.08);
+    }
+
+    .user-position {
+      position: absolute;
+      width: var(--gps-size);
+      height: var(--gps-size);
+      transform: translate(-50%, -50%);
+      border: var(--marker-line) solid rgba(216, 251, 255, 0.92);
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--cyan) 0 15%, rgba(9, 66, 68, 0.95) 18% 42%, transparent 45% 100%);
+      box-shadow: 0 0 10px rgba(53, 243, 255, 0.66), inset 0 0 7px rgba(255,255,255,0.16);
+      animation: userPulse 1.45s ease-in-out infinite;
+    }
+
+    .user-position::before,
+    .user-position::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      background: rgba(216, 251, 255, 0.86);
+      transform: translate(-50%, -50%);
+    }
+
+    .user-position::before { width: var(--marker-line); height: calc(var(--gps-size) * 0.78); }
+    .user-position::after { width: calc(var(--gps-size) * 0.78); height: var(--marker-line); }
+
+    @keyframes userPulse {
+      0%, 100% { filter: brightness(0.9); }
+      50% { filter: brightness(1.32); }
+    }
+
+
+    .section-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px 14px calc(18px + var(--safe-bottom));
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section-head h1,
+    .system-card h2,
+    .modal-head h2,
+    .quest-sheet h2 {
+      margin: 0;
+      color: var(--ok);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(80,255,143,0.24);
+    }
+
+    .section-head h1 { font-size: 20px; }
+    .system-card h2,
+    .modal-head h2,
+    .quest-sheet h2 { font-size: 15px; }
+
+    .section-head p,
+    .system-card p,
+    .muted {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .filter-row {
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .cards-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .data-grid,
+    .system-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .task-card,
+    .note-card,
+    .system-card {
+      border: 1px solid rgba(143, 255, 183, 0.18);
+      border-radius: 14px;
+      padding: 12px;
+      background:
+        linear-gradient(180deg, rgba(31, 44, 35, 0.9), rgba(9, 14, 11, 0.92));
+      box-shadow: 0 12px 20px rgba(0,0,0,0.22), inset 0 0 18px rgba(80,255,143,0.025);
+    }
+
+    .task-card.selected {
+      border-color: rgba(80, 255, 143, 0.58);
+      box-shadow: 0 0 0 1px rgba(80,255,143,0.18), 0 12px 20px rgba(0,0,0,0.22);
+    }
+
+    .task-title-row,
+    .note-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 9px;
+    }
+
+    .task-card h2,
+    .note-card h2 {
+      margin: 0;
+      color: #effff2;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .task-card p,
+    .note-card p {
+      margin: 8px 0 0;
+      color: #b8dcc1;
+      font-size: 13px;
+      line-height: 1.42;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .badge {
+      display: inline-flex;
+      min-height: 22px;
+      align-items: center;
+      border: 1px solid rgba(143, 255, 183, 0.22);
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.18);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge.ok { color: var(--ok); border-color: rgba(80,255,143,0.42); }
+    .badge.warn { color: var(--amber); border-color: rgba(215,177,93,0.42); }
+    .badge.danger { color: var(--danger); border-color: rgba(255,98,88,0.42); }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .card-actions button {
+      min-height: 30px;
+      padding: 6px 9px;
+      font-size: 10px;
+    }
+
+    .empty-list {
+      border: 1px dashed rgba(143, 255, 183, 0.22);
+      border-radius: 14px;
+      padding: 18px 14px;
+      color: var(--muted);
+      background: rgba(8, 13, 10, 0.56);
+      font-size: 13px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .note-editor,
+    .form-card {
+      display: grid;
+      gap: 9px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(143, 255, 183, 0.18);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(12, 18, 15, 0.88);
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid rgba(143, 255, 183, 0.22);
+      border-radius: 9px;
+      outline: none;
+      background: rgba(2, 6, 4, 0.84);
+      color: #eefff2;
+      padding: 10px;
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(80,255,143,0.58);
+      box-shadow: 0 0 0 2px rgba(80,255,143,0.08);
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .danger-card {
+      border-color: rgba(255, 98, 88, 0.24);
+    }
+
+    .quest-sheet {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: calc(66px + var(--safe-bottom));
+      z-index: 70;
+      display: none;
+      max-height: min(52dvh, 420px);
+      overflow: hidden;
+      border: 1px solid rgba(143, 255, 183, 0.28);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(21, 32, 25, 0.98), rgba(6, 9, 7, 0.98));
+      box-shadow: 0 -15px 36px rgba(0,0,0,0.48), inset 0 0 22px rgba(80,255,143,0.035);
+    }
+
+    .quest-sheet.visible { display: block; }
+    .quest-sheet.collapsed .sheet-content { display: none; }
+
+    .sheet-handle {
+      display: block;
+      width: 58px;
+      height: 22px;
+      margin: 0 auto;
+      border: 0;
+      background: transparent;
+    }
+
+    .sheet-handle::before {
+      content: "";
+      display: block;
+      width: 42px;
+      height: 4px;
+      margin: 9px auto;
+      border-radius: 999px;
+      background: rgba(205, 255, 215, 0.34);
+    }
+
+    .sheet-content {
+      max-height: calc(min(52dvh, 420px) - 24px);
+      overflow: auto;
+      padding: 0 14px 14px;
+    }
+
+    .sheet-content p {
+      color: #c6e9ce;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      place-items: center;
+      padding: 18px;
+      background: rgba(0,0,0,0.68);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal.visible { display: grid; }
+
+    .modal-box {
+      width: min(100%, 480px);
+      max-height: min(88dvh, 760px);
+      overflow: auto;
+      display: grid;
+      gap: 11px;
+      border: 1px solid rgba(143, 255, 183, 0.32);
+      border-radius: 18px;
+      padding: 14px;
+      background:
+        linear-gradient(180deg, rgba(32, 46, 37, 0.99), rgba(7, 12, 9, 0.99));
+      box-shadow: 0 25px 60px rgba(0,0,0,0.72), inset 0 0 22px rgba(80,255,143,0.04);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .boot-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 190;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle, rgba(79, 255, 143, 0.08), transparent 44%),
+        rgba(4, 7, 5, 0.97);
+    }
+
+    .boot-screen.hidden { display: none; }
+
+    .boot-card {
+      width: min(100%, 340px);
+      border: 1px solid rgba(143, 255, 183, 0.24);
+      border-radius: 20px;
+      padding: 22px;
+      text-align: center;
+      background: rgba(11, 17, 13, 0.92);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.52), inset 0 0 28px rgba(80,255,143,0.035);
+    }
+
+    .boot-logo {
+      display: grid;
+      width: 92px;
+      height: 92px;
+      place-items: center;
+      margin: 0 auto 15px;
+      border: 2px solid rgba(80,255,143,0.54);
+      border-radius: 20px;
+      color: var(--ok);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 12px rgba(80,255,143,0.48);
+      box-shadow: inset 0 0 22px rgba(80,255,143,0.06), 0 0 18px rgba(80,255,143,0.12);
+    }
+
+    .boot-text {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(82px + var(--safe-bottom));
+      z-index: 300;
+      max-width: min(92vw, 430px);
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      border: 1px solid rgba(143, 255, 183, 0.34);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(7, 13, 9, 0.96);
+      color: #effff2;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.38), 0 0 18px rgba(80,255,143,0.09);
+      font-size: 12px;
+      text-align: center;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 420px) {
+      .top-panel { padding-inline: 10px; }
+      .mini-btn { padding-inline: 8px; }
+      .map-toolbar { gap: 6px; }
+      .tool-btn { padding-inline: 8px; }
+      .two-cols { grid-template-columns: 1fr; }
+      .section-scroll { padding-inline: 11px; }
+      .quest-sheet { left: 7px; right: 7px; }
+    }
+
+    @media (min-width: 760px) {
+      body { padding: 12px; }
+      .app-shell { border-radius: 24px; height: min(100dvh - 24px, 980px); }
+    }
+
+
+    /* --- MOBILE RELEASE FIX: no horizontal creep, centered map, compact controls --- */
+    html { width: 100%; height: 100%; overflow: hidden; }
+    body { width: 100%; height: 100svh; min-height: 100svh; overflow: hidden; padding: 0; }
+    @supports (height: 100dvh) { body { height: 100dvh; min-height: 100dvh; } }
+
+    .app-shell {
+      width: 100%;
+      max-width: 560px;
+      min-width: 0;
+      height: 100svh;
+      max-height: none;
+      min-height: 0;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    @supports (height: 100dvh) { .app-shell { height: 100dvh; } }
+
+    .top-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      min-width: 0;
+      padding: clamp(8px, 2.3vw, 13px) clamp(9px, 2.6vw, 13px) clamp(7px, 2vw, 9px);
+    }
+
+    .device-title, .device-title > div, .top-actions, .screen, .tab-panel,
+    .map-viewport, .section-scroll, .bottom-nav { min-width: 0; max-width: 100%; }
+    .device-title strong { font-size: clamp(15px, 4.1vw, 18px); line-height: 1.05; }
+    .device-title small { width: auto; max-width: min(52vw, 245px); font-size: clamp(9px, 2.7vw, 11px); }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .top-actions .mini-btn, .top-actions .file-btn {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tab-panel.active { width: 100%; overflow: hidden; }
+
+    .map-toolbar {
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+      padding: 8px;
+      overflow: hidden;
+    }
+    .map-toolbar > * { width: 100%; min-width: 0; }
+    .map-toolbar .tool-btn, .map-toolbar .file-btn {
+      min-width: 0;
+      min-height: 34px;
+      padding: 7px 4px;
+      border-radius: 9px;
+      font-size: clamp(8px, 2.35vw, 10px);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .map-toolbar .tool-btn.square { width: 100%; padding-inline: 0; font-size: clamp(15px, 4.8vw, 18px); }
+
+    .hint-line {
+      min-width: 0;
+      min-height: 24px;
+      max-height: 24px;
+      padding: 5px 10px 4px;
+      line-height: 1.2;
+      font-size: clamp(9px, 2.45vw, 11px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hint-line.active { min-height: 34px; max-height: 42px; white-space: normal; overflow: hidden; }
+
+    .map-viewport { width: 100%; contain: layout paint size; }
+    .map-stage { backface-visibility: hidden; transform: translate3d(0, 0, 0) scale(1); }
+
+    .bottom-nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      width: 100%;
+      padding: 6px 6px calc(6px + var(--safe-bottom));
+      overflow: hidden;
+    }
+    .nav-btn {
+      min-width: 0;
+      max-width: 100%;
+      min-height: 40px;
+      padding: 6px 2px;
+      font-size: clamp(9px, 2.55vw, 11px);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    button, .file-btn { max-width: 100%; }
+
+    @media (max-width: 560px) {
+      .top-actions .file-btn, .top-actions #addMarkerTopBtn { display: none; }
+      .top-actions .mini-btn { min-height: 32px; padding: 7px 9px; font-size: 10px; }
+      .signal-dot { width: 12px; height: 12px; }
+      .device-title { gap: 8px; }
+    }
+    @media (max-width: 360px) {
+      .map-toolbar { gap: 4px; padding: 6px; }
+      .map-toolbar .tool-btn, .map-toolbar .file-btn { min-height: 32px; padding-inline: 2px; letter-spacing: 0.025em; }
+      .bottom-nav { gap: 3px; padding-inline: 5px; }
+      .nav-btn { letter-spacing: 0.025em; }
+    }
+    @media (min-width: 760px) {
+      body { padding: 12px; }
+      .app-shell { width: min(100vw - 24px, 560px); height: min(100dvh - 24px, 980px); max-height: 980px; }
+    }
+
+  
+
+    /* Release 6: stable viewport, hard map bounds and complete interaction states */
+    :root {
+      --focus-ring: rgba(105, 255, 160, 0.92);
+    }
+
+    button,
+    .file-btn,
+    input,
+    textarea,
+    select,
+    .map-viewport {
+      outline: none;
+    }
+
+    button:focus-visible,
+    .file-btn:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    .map-viewport:focus-visible {
+      box-shadow: 0 0 0 2px #07100a, 0 0 0 4px var(--focus-ring), inset 0 0 14px rgba(80,255,143,0.08);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      button:not(.marker):not(:disabled):hover,
+      .file-btn:hover {
+        border-color: rgba(117, 255, 169, 0.55);
+        filter: brightness(1.08);
+      }
+
+      .marker:hover {
+        z-index: 8;
+        transform: translate(-50%, -50%) scale(1.12);
+      }
+    }
+
+    button:not(.marker):not(.sheet-handle):active:not(:disabled),
+    .file-btn:active {
+      transform: translateY(1px);
+      filter: brightness(0.96);
+    }
+
+    .map-viewport {
+      contain: layout;
+      isolation: isolate;
+      overscroll-behavior: contain;
+      border-top: 1px solid rgba(122, 255, 170, 0.08);
+      border-bottom: 1px solid rgba(122, 255, 170, 0.12);
+    }
+
+    .map-stage {
+      transform: translate(0, 0) scale(1);
+      backface-visibility: visible;
+      will-change: auto;
+    }
+
+    .map-viewport.dragging .map-stage {
+      will-change: transform;
+    }
+
+    .zone-map {
+      transform: none;
+      backface-visibility: visible;
+    }
+
+    .map-viewport.boundary-x::after {
+      inset: 0;
+      box-shadow: inset 13px 0 18px -18px rgba(80,255,143,0.55), inset -13px 0 18px -18px rgba(80,255,143,0.55);
+    }
+
+    .map-viewport.boundary-y::before {
+      inset: 0;
+      box-shadow: inset 0 13px 18px -18px rgba(80,255,143,0.55), inset 0 -13px 18px -18px rgba(80,255,143,0.55);
+    }
+
+    .marker-layer.dense .marker:not(.selected) { filter: none; }
+
+    .marker[aria-pressed="true"]::before {
+      box-shadow: inset 0 0 6px rgba(235,255,241,0.24), 0 0 8px rgba(80,255,143,0.62);
+    }
+
+    .nav-btn[aria-current="page"] {
+      border-color: rgba(80, 255, 143, 0.72);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="top-panel" aria-label="Панель КПК">
+      <div class="device-title">
+        <span class="signal-dot" aria-hidden="true"></span>
+        <div>
+          <strong>КПК-ЗОНА</strong>
+          <small id="statusLine">карта не загружена</small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="file-btn" for="mapFileTop" title="Выбрать карту на устройстве">карта</label>
+        <input id="mapFileTop" type="file" accept="image/*" hidden>
+        <button class="mini-btn" id="gpsBtnTop" type="button" aria-label="GPS выключен">gps</button>
+        <button class="mini-btn" id="soundBtn" type="button" aria-label="Звук включён">звук</button>
+        <button class="mini-btn" id="addMarkerTopBtn" type="button">+ метка</button>
+      </div>
+    </header>
+
+    <main class="screen" id="screen">
+      <section class="boot-screen" id="bootScreen" aria-label="Загрузка КПК">
+        <div class="boot-card">
+          <div class="boot-logo">PDA</div>
+          <p class="boot-text" id="bootText">инициализация геомодуля...</p>
+          <button class="primary-btn" id="startBtn" type="button">Включить КПК</button>
+        </div>
+      </section>
+
+      <section class="tab-panel active" id="mapPanel" aria-label="Карта">
+        <div class="map-toolbar">
+          <label class="file-btn primary" for="mapFileMap" title="Выбрать карту на устройстве">Карта</label>
+          <input id="mapFileMap" type="file" accept="image/*" hidden>
+          <button type="button" class="tool-btn" id="addMarkerBtn" title="Поставить метку задания">Метка</button>
+          <button type="button" class="tool-btn" id="centerBtn">Центр</button>
+          <button type="button" class="tool-btn" id="gpsToggleBtn">GPS</button>
+          <button type="button" class="tool-btn" id="gpsBindBtn" title="Привязать текущие GPS-координаты к точке на карте">Привязка</button>
+          <button type="button" class="tool-btn" id="gpsCenterBtn" title="Центрировать карту по GPS-точке">Я</button>
+          <button type="button" class="tool-btn square" id="zoomOutBtn" aria-label="Уменьшить масштаб">−</button>
+          <button type="button" class="tool-btn square" id="zoomInBtn" aria-label="Увеличить масштаб">+</button>
+        </div>
+        <div class="hint-line" id="mapHint">Загрузите карту с устройства. После этого можно двигать, масштабировать и ставить метки.</div>
+        <div class="map-viewport" id="mapViewport" role="region" tabindex="0" aria-label="Интерактивная карта Зоны" aria-describedby="mapHint">
+          <div class="map-stage" id="mapStage">
+            <img class="zone-map" id="zoneMap" alt="Загруженная карта игровой зоны" draggable="false">
+            <div class="map-empty" id="mapEmpty">
+              <div class="empty-card">
+                <h2>Нет карты</h2>
+                <p>Выберите изображение карты на устройстве. Файл не отправляется в интернет и хранится только в браузере.</p>
+                <label class="file-btn primary" for="mapFileEmpty">Загрузить карту</label>
+                <input id="mapFileEmpty" type="file" accept="image/*" hidden>
+              </div>
+            </div>
+            <div class="gps-layer" id="gpsLayer" aria-live="polite"></div>
+            <div class="marker-layer" id="markerLayer" aria-label="Метки на карте"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="tasksPanel" aria-label="Задания">
+        <div class="section-scroll">
+          <div class="section-head">
+            <div>
+              <h1>Задания</h1>
+              <p>Пользовательские точки на карте, описание и статус.</p>
+            </div>
+            <button class="primary-btn" id="addTaskBtn" type="button">Новое</button>
+          </div>
+          <div class="filter-row" role="group" aria-label="Фильтр заданий">
+            <button type="button" class="chip active" data-filter="all">все</button>
+            <button type="button" class="chip" data-filter="active">активные</button>
+            <button type="button" class="chip" data-filter="done">выполненные</button>
+          </div>
+          <div class="cards-list" id="tasksList"></div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="notesPanel" aria-label="Заметки">
+        <div class="section-scroll">
+          <div class="section-head">
+            <div>
+              <h1>Заметки</h1>
+              <p>Личный журнал сталкера. Сохраняется локально в браузере.</p>
+            </div>
+            <button class="primary-btn" id="newNoteBtn" type="button">Новая</button>
+          </div>
+          <div class="note-editor" id="noteEditor">
+            <label>Заголовок
+              <input id="noteTitle" type="text" placeholder="Например: Тайник у насыпи" maxlength="80" autocomplete="off">
+            </label>
+            <label>Текст заметки
+              <textarea id="noteBody" placeholder="Наблюдения, координаты, предупреждения..." maxlength="12000" rows="6"></textarea>
+            </label>
+            <div class="editor-actions wrap">
+              <button class="primary-btn" id="saveNoteBtn" type="button">Сохранить</button>
+              <button class="secondary-btn" id="clearNoteBtn" type="button">Очистить форму</button>
+            </div>
+          </div>
+          <div class="cards-list" id="notesList"></div>
+        </div>
+      </section>
+
+      <section class="tab-panel" id="dataPanel" aria-label="Данные">
+        <div class="section-scroll">
+          <div class="section-head">
+            <div>
+              <h1>Данные</h1>
+              <p>Экспорт, импорт, карта и сброс. Стартовых заданий в этой версии нет.</p>
+            </div>
+          </div>
+          <div class="system-grid">
+            <article class="system-card">
+              <h2>Сводка</h2>
+              <p id="summaryText">загрузка...</p>
+            </article>
+            <article class="system-card">
+              <h2>Карта</h2>
+              <p id="mapInfoText">карта не выбрана</p>
+              <div class="editor-actions wrap">
+                <label class="file-btn primary" for="mapFileData">Выбрать карту</label>
+                <input id="mapFileData" type="file" accept="image/*" hidden>
+                <button class="secondary-btn" id="forgetMapBtn" type="button">Удалить карту</button>
+              </div>
+            </article>
+            <article class="system-card">
+              <h2>GPS-навигация</h2>
+              <p id="gpsStatusText">GPS выключен. Координаты не запрашивались.</p>
+              <div class="editor-actions wrap">
+                <button class="primary-btn" id="gpsToggleDataBtn" type="button">Включить GPS</button>
+                <button class="secondary-btn" id="gpsBindADataBtn" type="button">Привязать точку A</button>
+                <button class="secondary-btn" id="gpsBindBDataBtn" type="button">Привязать точку B</button>
+                <button class="secondary-btn" id="gpsCenterDataBtn" type="button">Центр на мне</button>
+                <button class="danger-btn" id="gpsResetDataBtn" type="button">Сброс GPS</button>
+              </div>
+              <div class="two-cols" style="margin-top:10px">
+                <label>Метров на пиксель
+                  <input id="gpsMetersPerPixel" type="number" min="0.02" max="200" step="0.01" value="1">
+                </label>
+                <label>Поворот карты, °
+                  <input id="gpsRotationDeg" type="number" min="-360" max="360" step="1" value="0">
+                </label>
+              </div>
+              <p class="muted">Точка A сопоставляет текущий GPS с местом на карте. При нажатии GPS браузер должен показать системный запрос геоданных. Если доступ уже запрещён, разрешите геолокацию в настройках сайта/браузера. Для точного движения поставьте точку B после перемещения к другому известному месту. Координаты хранятся только локально в этом браузере.</p>
+            </article>
+            <article class="system-card">
+              <h2>Резервная копия</h2>
+              <p>Экспортирует задания и заметки в JSON. Сам файл карты в JSON не вкладывается, потому что карта выбирается с устройства.</p>
+              <div class="editor-actions wrap">
+                <button class="primary-btn" id="exportBtn" type="button">Экспорт</button>
+                <label class="file-btn" for="importFile">Импорт</label>
+                <input id="importFile" type="file" accept="application/json,.json" hidden>
+              </div>
+            </article>
+            <article class="system-card danger-card">
+              <h2>Сброс</h2>
+              <p>Удаляет задания, заметки и сохранённую карту. После сброса список будет пустым, стартовые задания не создаются.</p>
+              <button class="danger-btn" id="resetBtn" type="button">Сбросить КПК</button>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Разделы КПК">
+      <button class="nav-btn active" data-tab="mapPanel" type="button">Карта</button>
+      <button class="nav-btn" data-tab="tasksPanel" type="button">Задания</button>
+      <button class="nav-btn" data-tab="notesPanel" type="button">Заметки</button>
+      <button class="nav-btn" data-tab="dataPanel" type="button">Данные</button>
+    </nav>
+
+    <aside class="quest-sheet" id="questSheet" aria-live="polite" aria-label="Описание метки">
+      <button class="sheet-handle" id="sheetToggle" type="button" aria-label="Свернуть или развернуть описание"></button>
+      <div class="sheet-content" id="sheetContent"></div>
+    </aside>
+  </div>
+
+  <div class="modal" id="markerModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="markerModalTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="markerModalTitle">Новая метка</h2>
+        <button class="icon-btn" id="closeMarkerModal" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <label>Название
+        <input id="markerTitle" type="text" maxlength="80" placeholder="Например: Тайник у бара" autocomplete="off">
+      </label>
+      <label>Описание
+        <textarea id="markerDesc" rows="5" maxlength="4000" placeholder="Что нужно сделать, что найдено, предупреждения..."></textarea>
+      </label>
+      <div class="two-cols">
+        <label>Тип
+          <select id="markerType">
+            <option value="main">сюжетная задача</option>
+            <option value="side">побочная задача</option>
+            <option value="anomaly">аномалия</option>
+            <option value="stash">тайник</option>
+            <option value="transition">переход</option>
+            <option value="trader">торговец</option>
+            <option value="faction">группировка</option>
+            <option value="danger">опасность</option>
+            <option value="lab">лаборатория</option>
+            <option value="note">заметка</option>
+          </select>
+        </label>
+        <label>Статус
+          <select id="markerStatus">
+            <option value="active">активно</option>
+            <option value="done">выполнено</option>
+          </select>
+        </label>
+      </div>
+      <div class="editor-actions wrap">
+        <button class="primary-btn" id="saveMarkerBtn" type="button">Сохранить</button>
+        <button class="secondary-btn" id="cancelMarkerBtn" type="button">Отмена</button>
+        <button class="danger-btn hidden" id="deleteMarkerBtn" type="button">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" aria-live="assertive"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'zonePdaSingle.v2';
+      const DB_NAME = 'zonePdaSingleDb';
+      const DB_VERSION = 1;
+      const DB_STORE = 'kv';
+      const MAP_KEY = 'mapBlob';
+      const MIN_SCALE = 0.01;
+      const MAX_SCALE = 6;
+      const MAX_IMAGE_BYTES = 45 * 1024 * 1024;
+      const MAX_IMAGE_DIMENSION = 12000;
+      const MAX_IMAGE_PIXELS = 64000000;
+      const SUPPORTED_MAP_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/avif']);
+      const MAX_JSON_BYTES = 4 * 1024 * 1024;
+      const TYPE_LABELS = {
+        main: 'сюжет',
+        side: 'побочное',
+        anomaly: 'аномалия',
+        stash: 'тайник',
+        transition: 'переход',
+        trader: 'торговец',
+        faction: 'группировка',
+        danger: 'опасность',
+        lab: 'лаборатория',
+        note: 'заметка'
+      };
+      const TYPE_SYMBOLS = {
+        main: '!',
+        side: '·',
+        anomaly: '◎',
+        stash: '▣',
+        transition: '➜',
+        trader: '$',
+        faction: '⚑',
+        danger: '△',
+        lab: '⌬',
+        note: 'i'
+      };
+      const ANCHOR_VISIBLE_MS = 8000;
+
+      const els = {
+        bootScreen: byId('bootScreen'),
+        bootText: byId('bootText'),
+        startBtn: byId('startBtn'),
+        statusLine: byId('statusLine'),
+        soundBtn: byId('soundBtn'),
+        gpsBtnTop: byId('gpsBtnTop'),
+        gpsToggleBtn: byId('gpsToggleBtn'),
+        gpsBindBtn: byId('gpsBindBtn'),
+        gpsCenterBtn: byId('gpsCenterBtn'),
+        gpsToggleDataBtn: byId('gpsToggleDataBtn'),
+        gpsBindADataBtn: byId('gpsBindADataBtn'),
+        gpsBindBDataBtn: byId('gpsBindBDataBtn'),
+        gpsCenterDataBtn: byId('gpsCenterDataBtn'),
+        gpsResetDataBtn: byId('gpsResetDataBtn'),
+        gpsMetersPerPixel: byId('gpsMetersPerPixel'),
+        gpsRotationDeg: byId('gpsRotationDeg'),
+        gpsStatusText: byId('gpsStatusText'),
+        mapViewport: byId('mapViewport'),
+        mapStage: byId('mapStage'),
+        zoneMap: byId('zoneMap'),
+        mapEmpty: byId('mapEmpty'),
+        gpsLayer: byId('gpsLayer'),
+        markerLayer: byId('markerLayer'),
+        mapHint: byId('mapHint'),
+        addMarkerBtn: byId('addMarkerBtn'),
+        addMarkerTopBtn: byId('addMarkerTopBtn'),
+        addTaskBtn: byId('addTaskBtn'),
+        centerBtn: byId('centerBtn'),
+        zoomInBtn: byId('zoomInBtn'),
+        zoomOutBtn: byId('zoomOutBtn'),
+        tasksList: byId('tasksList'),
+        notesList: byId('notesList'),
+        noteTitle: byId('noteTitle'),
+        noteBody: byId('noteBody'),
+        saveNoteBtn: byId('saveNoteBtn'),
+        clearNoteBtn: byId('clearNoteBtn'),
+        newNoteBtn: byId('newNoteBtn'),
+        summaryText: byId('summaryText'),
+        mapInfoText: byId('mapInfoText'),
+        exportBtn: byId('exportBtn'),
+        importFile: byId('importFile'),
+        resetBtn: byId('resetBtn'),
+        forgetMapBtn: byId('forgetMapBtn'),
+        questSheet: byId('questSheet'),
+        sheetToggle: byId('sheetToggle'),
+        sheetContent: byId('sheetContent'),
+        markerModal: byId('markerModal'),
+        markerModalTitle: byId('markerModalTitle'),
+        markerTitle: byId('markerTitle'),
+        markerDesc: byId('markerDesc'),
+        markerType: byId('markerType'),
+        markerStatus: byId('markerStatus'),
+        saveMarkerBtn: byId('saveMarkerBtn'),
+        cancelMarkerBtn: byId('cancelMarkerBtn'),
+        closeMarkerModal: byId('closeMarkerModal'),
+        deleteMarkerBtn: byId('deleteMarkerBtn'),
+        toast: byId('toast'),
+        mapInputs: Array.from(document.querySelectorAll('input[type="file"][accept="image/*"]')),
+        navButtons: Array.from(document.querySelectorAll('.nav-btn')),
+        tabPanels: Array.from(document.querySelectorAll('.tab-panel')),
+        filterButtons: Array.from(document.querySelectorAll('.chip[data-filter]'))
+      };
+
+      let state = loadState();
+      let activeTab = 'mapPanel';
+      let activeFilter = 'all';
+      let selectedTaskId = null;
+      let placingMarker = false;
+      let draftMarker = null;
+      let editingMarkerId = null;
+      let editingNoteId = null;
+      let toastTimer = null;
+      let audioContext = null;
+      let currentMapUrl = '';
+      let mapLoaded = false;
+      let gpsWatchId = null;
+      let gpsStarting = false;
+      let gpsPermissionState = 'unknown';
+      let lastGps = null;
+      let gpsErrorText = '';
+      let gpsBindingMode = null;
+      let gpsAnchorVisibleUntil = 0;
+      let gpsAnchorTimer = 0;
+
+      let stageSize = {
+        w: positiveNumber(state.map && state.map.w, 1000),
+        h: positiveNumber(state.map && state.map.h, 1200)
+      };
+
+      let view = { scale: 0.7, x: 0, y: 0 };
+      const pointers = new Map();
+      let dragStart = null;
+      let pinchStart = null;
+      let suppressClickUntil = 0;
+      let viewMode = 'fit';
+      let viewportObserver = null;
+      let viewportSyncFrame = 0;
+      let mapLoadGeneration = 0;
+      let mapStorageQueue = Promise.resolve();
+      let importGeneration = 0;
+      let modalReturnFocus = null;
+      let markerSaveLocked = false;
+      let gpsPermissionStatus = null;
+      let lastWheelSoundAt = 0;
+
+      boot();
+
+      function byId(id) {
+        const element = document.getElementById(id);
+        if (!element) throw new Error('Не найден элемент интерфейса: ' + id);
+        return element;
+      }
+      function boot() {
+        applyStageSize();
+        bindEvents();
+        initializeViewportObserver();
+        syncAccessibilityState();
+        renderAll();
+        requestAccurateCenter(false);
+        refreshGpsPermissionState();
+        restoreMapFromDb();
+        startBootAnimation();
+      }
+      function startBootAnimation() {
+        const phrases = [
+          'инициализация геомодуля...',
+          'проверка локальной памяти...',
+          'поиск карты сектора...',
+          'канал связи: шум/сигнал 42%'
+        ];
+        let index = 0;
+        let timer = 0;
+
+        const stopAnimation = () => {
+          if (timer) {
+            window.clearInterval(timer);
+            timer = 0;
+          }
+        };
+
+        if (!state.booted) {
+          timer = window.setInterval(() => {
+            index += 1;
+            els.bootText.textContent = phrases[index % phrases.length];
+          }, 920);
+        }
+
+        els.startBtn.addEventListener('click', () => {
+          stopAnimation();
+          state.booted = true;
+          saveState();
+          els.bootScreen.classList.add('hidden');
+          beep('start');
+          toast('КПК включён. Стартовых заданий нет.');
+        }, { once: true });
+
+        if (state.booted) {
+          stopAnimation();
+          requestFrame(() => els.bootScreen.classList.add('hidden'));
+        }
+      }
+      function bindEvents() {
+        els.navButtons.forEach((button) => {
+          button.addEventListener('click', () => switchTab(button.dataset.tab));
+        });
+
+        els.filterButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            activeFilter = button.dataset.filter || 'all';
+            els.filterButtons.forEach((item) => {
+              const active = item === button;
+              item.classList.toggle('active', active);
+              item.setAttribute('aria-pressed', String(active));
+            });
+            renderTasks();
+            beep('tick');
+          });
+        });
+
+        els.mapInputs.forEach((input) => {
+          input.addEventListener('change', () => handleMapFile(input));
+        });
+
+        els.addMarkerBtn.addEventListener('click', requestPlaceMarker);
+        els.addMarkerTopBtn.addEventListener('click', requestPlaceMarker);
+        els.addTaskBtn.addEventListener('click', createTaskAtCenter);
+        els.centerBtn.addEventListener('click', () => {
+          state.gps.follow = false;
+          saveState();
+          centerMap(true);
+          toast('Карта вписана в экран и жёстко ограничена краями изображения.');
+        });
+        els.zoomInBtn.addEventListener('click', () => zoomAtViewportCenter(view.scale * 1.22));
+        els.zoomOutBtn.addEventListener('click', () => zoomAtViewportCenter(view.scale / 1.22));
+
+        els.gpsBtnTop.addEventListener('click', toggleGps);
+        els.gpsToggleBtn.addEventListener('click', toggleGps);
+        els.gpsToggleDataBtn.addEventListener('click', toggleGps);
+        els.gpsBindBtn.addEventListener('click', () => startGpsBinding(getNextGpsAnchorMode()));
+        els.gpsBindADataBtn.addEventListener('click', () => startGpsBinding('anchorA'));
+        els.gpsBindBDataBtn.addEventListener('click', () => startGpsBinding('anchorB'));
+        els.gpsCenterBtn.addEventListener('click', () => centerOnGps(true));
+        els.gpsCenterDataBtn.addEventListener('click', () => centerOnGps(true));
+        els.gpsResetDataBtn.addEventListener('click', () => resetGpsCalibration(true));
+        els.gpsMetersPerPixel.addEventListener('change', saveManualGpsCalibration);
+        els.gpsRotationDeg.addEventListener('change', saveManualGpsCalibration);
+
+        els.mapViewport.addEventListener('pointerdown', handlePointerDown);
+        els.mapViewport.addEventListener('pointermove', handlePointerMove);
+        els.mapViewport.addEventListener('pointerup', handlePointerUp);
+        els.mapViewport.addEventListener('pointercancel', handlePointerUp);
+        els.mapViewport.addEventListener('lostpointercapture', handlePointerCaptureLost);
+        els.mapViewport.addEventListener('click', handleMapClick);
+        els.mapViewport.addEventListener('wheel', handleWheel, { passive: false });
+        els.mapViewport.addEventListener('keydown', handleMapKeyboard);
+
+        els.saveMarkerBtn.addEventListener('click', saveMarkerFromModal);
+        els.cancelMarkerBtn.addEventListener('click', closeMarkerModal);
+        els.closeMarkerModal.addEventListener('click', closeMarkerModal);
+        els.deleteMarkerBtn.addEventListener('click', deleteMarkerFromModal);
+        els.markerModal.addEventListener('click', (event) => {
+          if (event.target === els.markerModal) closeMarkerModal();
+        });
+        els.markerModal.addEventListener('keydown', trapModalFocus);
+
+        els.newNoteBtn.addEventListener('click', newNoteDraft);
+        els.saveNoteBtn.addEventListener('click', saveNote);
+        els.clearNoteBtn.addEventListener('click', clearNoteForm);
+
+        els.exportBtn.addEventListener('click', exportData);
+        els.importFile.addEventListener('change', handleImportFile);
+        els.resetBtn.addEventListener('click', resetAll);
+        els.forgetMapBtn.addEventListener('click', forgetMap);
+        els.sheetToggle.addEventListener('click', () => {
+          const collapsed = els.questSheet.classList.toggle('collapsed');
+          els.sheetToggle.setAttribute('aria-expanded', String(!collapsed));
+        });
+        els.soundBtn.addEventListener('click', toggleSound);
+
+        window.addEventListener('resize', scheduleViewportSync, { passive: true });
+        window.addEventListener('orientationchange', scheduleViewportSync, { passive: true });
+        window.addEventListener('blur', resetPointerInteraction);
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) resetPointerInteraction();
+          else scheduleViewportSync();
+        });
+        window.addEventListener('pagehide', cleanupRuntime);
+        window.addEventListener('pageshow', (event) => {
+          if (!event.persisted) return;
+          if (!viewportObserver) initializeViewportObserver();
+          scheduleViewportSync();
+          refreshGpsPermissionState();
+          updateGpsUi();
+        });
+
+        window.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            if (els.markerModal.classList.contains('visible')) closeMarkerModal();
+            else if (gpsBindingMode) cancelGpsBinding();
+            else if (placingMarker) cancelPlacingMarker();
+            else hideSheet();
+          }
+        });
+      }
+      function switchTab(tabId) {
+        if (!tabId || !document.getElementById(tabId)) return;
+        activeTab = tabId;
+        els.tabPanels.forEach((panel) => {
+          const active = panel.id === tabId;
+          panel.classList.toggle('active', active);
+          panel.setAttribute('aria-hidden', String(!active));
+        });
+        els.navButtons.forEach((button) => {
+          const active = button.dataset.tab === tabId;
+          button.classList.toggle('active', active);
+          if (active) button.setAttribute('aria-current', 'page');
+          else button.removeAttribute('aria-current');
+        });
+        if (tabId !== 'mapPanel') hideSheet();
+        beep('tick');
+        if (tabId === 'mapPanel') scheduleViewportSync();
+      }
+
+      function loadState() {
+        const empty = makeEmptyState();
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return empty;
+          const parsed = JSON.parse(raw);
+          return {
+            version: 6,
+            booted: Boolean(parsed && parsed.booted),
+            sound: !(parsed && parsed.sound === false),
+            map: sanitizeMapMeta(parsed && parsed.map),
+            tasks: sanitizeTasks(parsed && parsed.tasks, 500),
+            notes: sanitizeNotes(parsed && parsed.notes, 500),
+            gps: sanitizeGps(parsed && parsed.gps)
+          };
+        } catch (error) {
+          console.warn('State load failed:', error);
+          return empty;
+        }
+      }
+
+      function makeEmptyState() {
+        return {
+          version: 6,
+          booted: false,
+          sound: true,
+          map: { name: '', type: '', size: 0, w: 1000, h: 1200, saved: false },
+          tasks: [],
+          notes: [],
+          gps: makeEmptyGpsState()
+        };
+      }
+
+      function sanitizeMapMeta(map) {
+        if (!map || typeof map !== 'object') {
+          return { name: '', type: '', size: 0, w: 1000, h: 1200, saved: false };
+        }
+        return {
+          name: String(map.name || '').slice(0, 180),
+          type: String(map.type || '').slice(0, 80),
+          size: clamp(Number(map.size) || 0, 0, MAX_IMAGE_BYTES),
+          w: clamp(Number(map.w) || 1000, 100, 20000),
+          h: clamp(Number(map.h) || 1200, 100, 20000),
+          saved: Boolean(map.saved)
+        };
+      }
+
+      function makeEmptyGpsState() {
+        return {
+          follow: false,
+          calibration: {
+            anchors: [],
+            metersPerPixel: 1,
+            rotationDeg: 0
+          }
+        };
+      }
+
+      function sanitizeGps(gps) {
+        const empty = makeEmptyGpsState();
+        if (!gps || typeof gps !== 'object') return empty;
+        const calibration = gps.calibration && typeof gps.calibration === 'object' ? gps.calibration : {};
+        return {
+          follow: false,
+          calibration: {
+            anchors: sanitizeGpsAnchors(calibration.anchors),
+            metersPerPixel: clamp(Number(calibration.metersPerPixel) || 1, 0.02, 200),
+            rotationDeg: clamp(Number(calibration.rotationDeg) || 0, -360, 360)
+          }
+        };
+      }
+
+      function sanitizeGpsAnchors(anchors) {
+        if (!Array.isArray(anchors)) return [];
+        return anchors.slice(0, 2).map((anchor) => {
+          const lat = Number(anchor && anchor.lat);
+          const lng = Number(anchor && anchor.lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+          return {
+            lat: clamp(lat, -90, 90),
+            lng: clamp(lng, -180, 180),
+            accuracy: clamp(Number(anchor && anchor.accuracy) || 0, 0, 10000),
+            x: clamp(Number(anchor && anchor.x), 0, 1),
+            y: clamp(Number(anchor && anchor.y), 0, 1),
+            ts: positiveNumber(anchor && anchor.ts, Date.now())
+          };
+        }).filter(Boolean);
+      }
+      function sanitizeTasks(tasks, maxCount) {
+        if (!Array.isArray(tasks)) return [];
+        const seen = new Set();
+        const result = [];
+        for (const raw of tasks.slice(0, maxCount)) {
+          let id = String(raw && raw.id || makeId('task')).slice(0, 80);
+          if (!id || seen.has(id)) id = makeId('task');
+          seen.add(id);
+          result.push({
+            id,
+            title: normalizeText(raw && raw.title, 80) || 'Безымянная метка',
+            description: normalizeText(raw && raw.description, 4000),
+            x: clamp(Number(raw && raw.x), 0, 1),
+            y: clamp(Number(raw && raw.y), 0, 1),
+            type: Object.prototype.hasOwnProperty.call(TYPE_LABELS, raw && raw.type) ? raw.type : 'side',
+            status: raw && raw.status === 'done' ? 'done' : 'active',
+            createdAt: positiveTimestamp(raw && raw.createdAt, Date.now()),
+            updatedAt: positiveTimestamp(raw && raw.updatedAt, positiveTimestamp(raw && raw.createdAt, Date.now()))
+          });
+        }
+        return result;
+      }
+      function sanitizeNotes(notes, maxCount) {
+        if (!Array.isArray(notes)) return [];
+        const seen = new Set();
+        const result = [];
+        for (const raw of notes.slice(0, maxCount)) {
+          let id = String(raw && raw.id || makeId('note')).slice(0, 80);
+          if (!id || seen.has(id)) id = makeId('note');
+          seen.add(id);
+          result.push({
+            id,
+            title: normalizeText(raw && raw.title, 80) || 'Без названия',
+            body: normalizeText(raw && raw.body, 12000),
+            createdAt: positiveTimestamp(raw && raw.createdAt, Date.now()),
+            updatedAt: positiveTimestamp(raw && raw.updatedAt, positiveTimestamp(raw && raw.createdAt, Date.now()))
+          });
+        }
+        return result;
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (error) {
+          console.warn('State save failed:', error);
+          toast('Не удалось сохранить данные. Проверьте свободное место браузера.');
+        }
+      }
+      async function restoreMapFromDb() {
+        if (!state.map.saved) {
+          updateMapUi();
+          return;
+        }
+        const expectedGeneration = mapLoadGeneration;
+        try {
+          const blob = await queueMapStorage(() => idbGet(MAP_KEY));
+          if (expectedGeneration !== mapLoadGeneration) return;
+          if (!blob || !isSupportedMapBlob(blob, state.map.name)) {
+            state.map.saved = false;
+            saveState();
+            updateMapUi();
+            return;
+          }
+          setMapBlob(blob, state.map.name || 'сохранённая карта', false);
+        } catch (error) {
+          if (expectedGeneration !== mapLoadGeneration) return;
+          console.warn('Map restore failed:', error);
+          state.map.saved = false;
+          saveState();
+          updateMapUi();
+        }
+      }
+      function handleMapFile(input) {
+        const file = input.files && input.files[0];
+        input.value = '';
+        if (!file) return;
+        if (!isSupportedMapBlob(file, file.name)) {
+          toast('Поддерживаются безопасные растровые форматы: JPG, PNG, WebP, GIF, BMP и AVIF.');
+          return;
+        }
+        if (file.size > MAX_IMAGE_BYTES) {
+          toast('Файл карты слишком большой. Лимит: 45 МБ.');
+          return;
+        }
+        setMapBlob(file, file.name || 'карта', true);
+      }
+      async function setMapBlob(blob, name, persist) {
+        if (!isSupportedMapBlob(blob, name)) {
+          toast('Небезопасный или неподдерживаемый формат карты.');
+          return;
+        }
+        const generation = ++mapLoadGeneration;
+        const candidateUrl = URL.createObjectURL(blob);
+        const probe = new Image();
+
+        const rejectCandidate = (message) => {
+          URL.revokeObjectURL(candidateUrl);
+          if (generation !== mapLoadGeneration) return;
+          if (!mapLoaded && !persist) {
+            state.map.saved = false;
+            saveState();
+          }
+          updateMapUi();
+          toast(message);
+        };
+
+        probe.onload = async () => {
+          if (generation !== mapLoadGeneration) {
+            URL.revokeObjectURL(candidateUrl);
+            return;
+          }
+          const naturalW = Number(probe.naturalWidth) || 0;
+          const naturalH = Number(probe.naturalHeight) || 0;
+          if (!naturalW || !naturalH || naturalW > MAX_IMAGE_DIMENSION || naturalH > MAX_IMAGE_DIMENSION || naturalW * naturalH > MAX_IMAGE_PIXELS) {
+            rejectCandidate('Разрешение карты слишком велико для стабильной работы. Лимит: 12 000 px по стороне и 64 Мп.');
+            return;
+          }
+
+          const previousUrl = currentMapUrl;
+          currentMapUrl = candidateUrl;
+          els.zoneMap.onload = null;
+          els.zoneMap.onerror = null;
+          els.zoneMap.src = candidateUrl;
+          els.zoneMap.classList.add('loaded');
+          if (previousUrl && previousUrl !== candidateUrl) URL.revokeObjectURL(previousUrl);
+
+          mapLoaded = true;
+          stageSize = { w: naturalW, h: naturalH };
+          state.map = {
+            name: String(name || 'карта').slice(0, 180),
+            type: String(blob.type || '').slice(0, 80),
+            size: Number(blob.size) || 0,
+            w: stageSize.w,
+            h: stageSize.h,
+            saved: Boolean(persist || state.map.saved)
+          };
+          if (persist) clearGpsCalibration(false);
+          applyStageSize();
+          viewMode = 'fit';
+          saveState();
+          updateMapUi();
+          renderMarkers();
+          renderGpsPosition();
+          updateGpsUi();
+          requestAccurateCenter(false);
+
+          if (persist) {
+            try {
+              await queueMapStorage(() => idbSet(MAP_KEY, blob));
+              if (generation !== mapLoadGeneration) return;
+              state.map.saved = true;
+              saveState();
+              updateMapUi();
+              toast('Карта загружена, сохранена и привязана к границам интерфейса.');
+            } catch (error) {
+              if (generation !== mapLoadGeneration) return;
+              console.warn('Map persist failed:', error);
+              state.map.saved = false;
+              saveState();
+              updateMapUi();
+              toast('Карта открыта, но не сохранена. Браузер запретил запись.');
+            }
+          }
+        };
+        probe.onerror = () => rejectCandidate('Не удалось открыть изображение карты. Предыдущая карта не изменена.');
+        probe.src = candidateUrl;
+      }
+      function revokeMapUrl() {
+        els.zoneMap.onload = null;
+        els.zoneMap.onerror = null;
+        if (currentMapUrl) {
+          URL.revokeObjectURL(currentMapUrl);
+          currentMapUrl = '';
+        }
+      }
+
+      function applyStageSize() {
+        els.mapStage.style.width = Math.round(stageSize.w) + 'px';
+        els.mapStage.style.height = Math.round(stageSize.h) + 'px';
+      }
+
+      function updateMapUi() {
+        els.mapEmpty.classList.toggle('hidden', mapLoaded);
+        els.statusLine.textContent = mapLoaded ? compactMapName(state.map.name) : 'карта не загружена';
+        els.mapInfoText.textContent = mapLoaded
+          ? `${state.map.name || 'карта'} · ${stageSize.w}×${stageSize.h}px · ${formatBytes(state.map.size)} · жёсткие границы${state.map.saved ? ' · сохранена локально' : ' · только текущая сессия'}`
+          : 'карта не выбрана';
+        els.forgetMapBtn.disabled = !mapLoaded && !state.map.saved;
+        document.querySelectorAll('.file-btn[for^="mapFile"]').forEach((button) => button.classList.toggle('active', mapLoaded));
+        els.addMarkerBtn.classList.toggle('active', placingMarker);
+        els.addMarkerBtn.setAttribute('aria-pressed', String(placingMarker));
+        els.addMarkerTopBtn.classList.toggle('active', placingMarker);
+        els.addMarkerTopBtn.setAttribute('aria-pressed', String(placingMarker));
+        els.gpsBindBtn.classList.toggle('active', Boolean(gpsBindingMode));
+        els.gpsBindBtn.classList.toggle('mode-warning', Boolean(gpsBindingMode));
+        updateHint();
+      }
+
+      function requestPlaceMarker() {
+        if (!mapLoaded) {
+          switchTab('mapPanel');
+          toast('Сначала загрузите карту с устройства.');
+          return;
+        }
+        placingMarker = true;
+        els.mapViewport.classList.add('placing');
+        updateMapUi();
+        switchTab('mapPanel');
+        beep('select');
+      }
+
+      function cancelPlacingMarker() {
+        placingMarker = false;
+        draftMarker = null;
+        els.mapViewport.classList.remove('placing');
+        updateMapUi();
+        toast('Постановка метки отменена.');
+      }
+      function createTaskAtCenter() {
+        if (!mapLoaded) {
+          switchTab('mapPanel');
+          toast('Загрузите карту, затем создайте точку задания.');
+          return;
+        }
+        if (activeTab !== 'mapPanel') {
+          switchTab('mapPanel');
+          requestFrame(createTaskAtCenter);
+          return;
+        }
+        const viewport = getViewportMetrics();
+        const center = viewportPointToStage(viewport.w / 2, viewport.h / 2);
+        openMarkerModal({ x: center.x / stageSize.w, y: center.y / stageSize.h });
+      }
+
+      function handleMapClick(event) {
+        if (gpsBindingMode) {
+          handleGpsBindingClick(event);
+          return;
+        }
+        if (!placingMarker) return;
+        if (Date.now() < suppressClickUntil) return;
+        if (event.target.closest('.marker')) return;
+        const rect = els.mapViewport.getBoundingClientRect();
+        const point = viewportPointToStage(event.clientX - rect.left, event.clientY - rect.top);
+        placingMarker = false;
+        els.mapViewport.classList.remove('placing');
+        updateMapUi();
+        openMarkerModal({ x: point.x / stageSize.w, y: point.y / stageSize.h });
+      }
+      function handlePointerDown(event) {
+        if (!mapLoaded) return;
+        if (event.button !== undefined && event.button !== 0) return;
+        if (event.target.closest('.marker') && !placingMarker && !gpsBindingMode) return;
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        try { els.mapViewport.setPointerCapture(event.pointerId); } catch (error) { /* необязательная возможность браузера */ }
+        els.mapViewport.classList.add('dragging');
+        if (pointers.size === 1) {
+          dragStart = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            viewX: view.x,
+            viewY: view.y,
+            moved: false
+          };
+        } else if (pointers.size === 2) {
+          const pair = getPointerPair();
+          const rect = els.mapViewport.getBoundingClientRect();
+          pinchStart = {
+            distance: distance(pair[0], pair[1]),
+            center: midpoint(pair[0], pair[1]),
+            scale: view.scale,
+            x: view.x,
+            y: view.y,
+            rectLeft: rect.left,
+            rectTop: rect.top
+          };
+        }
+      }
+      function handlePointerMove(event) {
+        if (!pointers.has(event.pointerId) || !mapLoaded) return;
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (pointers.size === 2 && pinchStart) {
+          const pair = getPointerPair();
+          const nextDistance = distance(pair[0], pair[1]);
+          const currentCenter = midpoint(pair[0], pair[1]);
+          const centerInViewport = {
+            x: currentCenter.x - pinchStart.rectLeft,
+            y: currentCenter.y - pinchStart.rectTop
+          };
+          const baseMapX = (pinchStart.center.x - pinchStart.rectLeft - pinchStart.x) / pinchStart.scale;
+          const baseMapY = (pinchStart.center.y - pinchStart.rectTop - pinchStart.y) / pinchStart.scale;
+          view.scale = clampMapScale(pinchStart.scale * (nextDistance / Math.max(1, pinchStart.distance)));
+          view.x = centerInViewport.x - baseMapX * view.scale;
+          view.y = centerInViewport.y - baseMapY * view.scale;
+          viewMode = 'free';
+          constrainView();
+          updateTransform();
+          suppressClickUntil = Date.now() + 250;
+          event.preventDefault();
+          return;
+        }
+        if (pointers.size === 1 && dragStart && dragStart.pointerId === event.pointerId) {
+          const dx = event.clientX - dragStart.startX;
+          const dy = event.clientY - dragStart.startY;
+          if (Math.hypot(dx, dy) > 4) {
+            dragStart.moved = true;
+            viewMode = 'free';
+          }
+          view.x = dragStart.viewX + dx;
+          view.y = dragStart.viewY + dy;
+          constrainView();
+          updateTransform();
+          event.preventDefault();
+        }
+      }
+      function handlePointerUp(event) {
+        if (dragStart && dragStart.pointerId === event.pointerId && dragStart.moved) {
+          suppressClickUntil = Date.now() + 220;
+        }
+        pointers.delete(event.pointerId);
+        if (pointers.size === 0) {
+          dragStart = null;
+          pinchStart = null;
+          els.mapViewport.classList.remove('dragging');
+        } else if (pointers.size === 1) {
+          const only = getPointerPair()[0];
+          dragStart = {
+            pointerId: Array.from(pointers.keys())[0],
+            startX: only.x,
+            startY: only.y,
+            viewX: view.x,
+            viewY: view.y,
+            moved: false
+          };
+          pinchStart = null;
+        }
+        try { els.mapViewport.releasePointerCapture(event.pointerId); } catch (error) { /* захват уже мог завершиться */ }
+      }
+      function handleWheel(event) {
+        if (!mapLoaded) return;
+        event.preventDefault();
+        const rect = els.mapViewport.getBoundingClientRect();
+        const normalized = clamp(event.deltaY, -120, 120);
+        const factor = Math.exp(-normalized * 0.0018);
+        zoomAt(event.clientX - rect.left, event.clientY - rect.top, view.scale * factor, false);
+        const now = performance.now();
+        if (now - lastWheelSoundAt > 140) {
+          lastWheelSoundAt = now;
+          beep('tick');
+        }
+      }
+
+      function viewportPointToStage(vx, vy) {
+        return {
+          x: clamp((vx - view.x) / view.scale, 0, stageSize.w),
+          y: clamp((vy - view.y) / view.scale, 0, stageSize.h)
+        };
+      }
+      function zoomAtViewportCenter(nextScale) {
+        const viewport = getViewportMetrics();
+        zoomAt(viewport.w / 2, viewport.h / 2, nextScale, true);
+      }
+      function zoomAt(vx, vy, nextScale, playSound) {
+        if (!mapLoaded) return;
+        const scale = clampMapScale(nextScale);
+        const currentScale = Math.max(MIN_SCALE, Number(view.scale) || 1);
+        const mapX = (vx - view.x) / currentScale;
+        const mapY = (vy - view.y) / currentScale;
+        view.scale = scale;
+        view.x = vx - mapX * scale;
+        view.y = vy - mapY * scale;
+        viewMode = Math.abs(scale - getFitScale()) < 0.0005 ? 'fit' : 'free';
+        constrainView();
+        updateTransform();
+        if (playSound) beep('tick');
+      }
+      function requestFrame(callback) {
+        if (typeof window.requestAnimationFrame === 'function') {
+          return window.requestAnimationFrame(callback);
+        }
+        return window.setTimeout(callback, 16);
+      }
+      function getViewportMetrics() {
+        const width = Math.round(els.mapViewport.clientWidth || 0);
+        const height = Math.round(els.mapViewport.clientHeight || 0);
+        return { w: Math.max(1, width), h: Math.max(1, height) };
+      }
+      function isViewApproximatelyCentered() {
+        const viewport = getViewportMetrics();
+        const fit = getFitScale();
+        const expectedX = Math.round((viewport.w - stageSize.w * fit) / 2);
+        const expectedY = Math.round((viewport.h - stageSize.h * fit) / 2);
+        return Math.abs(view.scale - fit) <= 0.001 && Math.abs(view.x - expectedX) <= 2 && Math.abs(view.y - expectedY) <= 2;
+      }
+      function requestAccurateCenter(playSound) {
+        viewMode = 'fit';
+        centerMap(playSound);
+        scheduleViewportSync();
+      }
+      function centerMap(playSound) {
+        const viewport = getViewportMetrics();
+        if (viewport.w <= 1 || viewport.h <= 1) return;
+        const mapW = Math.max(1, Number(stageSize.w) || 1);
+        const mapH = Math.max(1, Number(stageSize.h) || 1);
+        view.scale = getFitScale();
+        view.x = Math.round((viewport.w - mapW * view.scale) / 2);
+        view.y = Math.round((viewport.h - mapH * view.scale) / 2);
+        viewMode = 'fit';
+        updateTransform();
+        if (playSound) beep('tick');
+      }
+      function constrainView() {
+        const viewport = getViewportMetrics();
+        view.scale = clampMapScale(view.scale);
+        const scaledW = Math.max(1, stageSize.w * view.scale);
+        const scaledH = Math.max(1, stageSize.h * view.scale);
+        const epsilon = 0.01;
+
+        if (scaledW <= viewport.w + epsilon) {
+          view.x = (viewport.w - scaledW) / 2;
+        } else {
+          view.x = clamp(view.x, viewport.w - scaledW, 0);
+        }
+
+        if (scaledH <= viewport.h + epsilon) {
+          view.y = (viewport.h - scaledH) / 2;
+        } else {
+          view.y = clamp(view.y, viewport.h - scaledH, 0);
+        }
+      }
+      function updateTransform() {
+        view.scale = clampMapScale(view.scale);
+        constrainView();
+        const x = Math.round((Number(view.x) || 0) * 100) / 100;
+        const y = Math.round((Number(view.y) || 0) * 100) / 100;
+        view.x = x;
+        view.y = y;
+        els.mapStage.style.transform = `translate(${x}px, ${y}px) scale(${view.scale})`;
+        updateOverlaySizing();
+      }
+
+      function updateOverlaySizing() {
+        const scale = clamp(Number(view.scale) || 1, MIN_SCALE, MAX_SCALE);
+        const markerScreen = clamp(10 + scale * 1.15, 10, 16);
+        const gpsScreen = clamp(15 + scale * 1.9, 16, 23);
+        const anchorScreen = clamp(11 + scale * 1.3, 11, 17);
+        const markerSize = markerScreen / scale;
+        const gpsSize = gpsScreen / scale;
+        const anchorSize = anchorScreen / scale;
+        els.mapStage.style.setProperty('--marker-size', markerSize.toFixed(2) + 'px');
+        els.mapStage.style.setProperty('--marker-font', (clamp(markerScreen * 0.42, 7, 10) / scale).toFixed(2) + 'px');
+        els.mapStage.style.setProperty('--marker-line', (clamp(1.1, 1.1, 1.6) / scale).toFixed(2) + 'px');
+        els.mapStage.style.setProperty('--gps-size', gpsSize.toFixed(2) + 'px');
+        els.mapStage.style.setProperty('--anchor-size', anchorSize.toFixed(2) + 'px');
+      }
+      function updateHint() {
+        if (gpsBindingMode) {
+          const label = gpsBindingMode === 'anchorB' ? 'B' : 'A';
+          els.mapHint.textContent = `GPS-привязка: коснитесь точки ${label} на карте, где вы сейчас находитесь. Esc — отмена.`;
+          els.mapHint.classList.add('active');
+        } else if (placingMarker) {
+          els.mapHint.textContent = 'Режим постановки метки: коснитесь нужной точки на карте. Esc — отмена.';
+          els.mapHint.classList.add('active');
+        } else if (gpsErrorText) {
+          els.mapHint.textContent = gpsErrorText;
+          els.mapHint.classList.add('active');
+        } else if (mapLoaded) {
+          els.mapHint.textContent = 'Перетаскивание ограничено краями карты. Два пальца или колесо — масштаб. Метка открывает описание.';
+          els.mapHint.classList.remove('active');
+        } else {
+          els.mapHint.textContent = 'Загрузите карту с устройства. Границы перемещения будут рассчитаны автоматически по новой картинке.';
+          els.mapHint.classList.remove('active');
+        }
+      }
+
+      function renderAll() {
+        renderMarkers();
+        renderTasks();
+        renderNotes();
+        renderSummary();
+        renderGpsPosition();
+        updateGpsUi();
+        updateSoundButton();
+        updateMapUi();
+      }
+
+      function gpsSupported() {
+        return Boolean(navigator.geolocation);
+      }
+
+      function gpsIsRunning() {
+        return gpsWatchId !== null || gpsStarting;
+      }
+
+      function gpsEnvironmentIssue() {
+        const protocol = String(window.location && window.location.protocol || '').replace(':', '') || 'локальный файл';
+        if (!navigator.geolocation) {
+          if (!window.isSecureContext) {
+            return `GPS заблокирован браузером: страница открыта как ${protocol}. Чтобы появился системный запрос «Разрешить геоданные», откройте этот HTML через HTTPS или через локальный сервер localhost.`;
+          }
+          return 'GPS API недоступен в этом браузере.';
+        }
+        if (!window.isSecureContext) {
+          return `Источник ${protocol} не является защищённым. Браузер может сразу запретить GPS без окна разрешения. Надёжный запуск для GPS — HTTPS или localhost.`;
+        }
+        return '';
+      }
+
+      function toggleGps() {
+        if (gpsIsRunning()) stopGps(true);
+        else startGps();
+      }
+
+      function geolocationOptions() {
+        return {
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 20000
+        };
+      }
+      async function refreshGpsPermissionState() {
+        gpsPermissionState = 'unknown';
+        try {
+          if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+            const status = await navigator.permissions.query({ name: 'geolocation' });
+            if (gpsPermissionStatus && gpsPermissionStatus !== status) gpsPermissionStatus.onchange = null;
+            gpsPermissionStatus = status || null;
+            gpsPermissionState = status && status.state ? String(status.state) : 'unknown';
+            if (status) {
+              status.onchange = () => {
+                gpsPermissionState = status.state || 'unknown';
+                updateGpsUi();
+              };
+            }
+          }
+        } catch (error) {
+          gpsPermissionState = 'unknown';
+        }
+        updateGpsUi();
+        return gpsPermissionState;
+      }
+
+      function startGps() {
+        const environmentIssue = gpsEnvironmentIssue();
+        if (!gpsSupported()) {
+          gpsErrorText = environmentIssue || 'GPS недоступен в этом браузере.';
+          updateGpsUi();
+          updateHint();
+          toast(gpsErrorText);
+          return;
+        }
+        if (gpsWatchId !== null || gpsStarting) {
+          toast('GPS уже запущен или ожидает разрешения.');
+          return;
+        }
+        gpsStarting = true;
+        gpsErrorText = environmentIssue || 'браузер запрашивает доступ к геоданным...';
+        refreshGpsPermissionState();
+        updateGpsUi();
+        updateHint();
+        toast(environmentIssue || 'Сейчас браузер должен показать запрос геоданных. Нажмите «Разрешить».');
+        try {
+          navigator.geolocation.getCurrentPosition((position) => {
+            if (!gpsStarting) return;
+            onGpsPosition(position);
+            beginGpsWatch();
+          }, (error) => {
+            gpsStarting = false;
+            gpsWatchId = null;
+            onGpsError(error);
+            refreshGpsPermissionState();
+          }, geolocationOptions());
+        } catch (error) {
+          gpsStarting = false;
+          gpsWatchId = null;
+          gpsErrorText = 'Не удалось открыть запрос GPS.';
+          updateGpsUi();
+          toast(gpsErrorText);
+        }
+      }
+
+      function beginGpsWatch() {
+        if (!gpsSupported()) {
+          gpsStarting = false;
+          return;
+        }
+        try {
+          gpsWatchId = navigator.geolocation.watchPosition(onGpsPosition, onGpsError, geolocationOptions());
+          gpsStarting = false;
+          gpsErrorText = '';
+          refreshGpsPermissionState();
+          updateGpsUi();
+          toast('GPS включён. Положение будет обновляться автоматически.');
+        } catch (error) {
+          gpsWatchId = null;
+          gpsStarting = false;
+          gpsErrorText = 'Не удалось запустить постоянное слежение GPS.';
+          updateGpsUi();
+          toast(gpsErrorText);
+        }
+      }
+
+      function stopGps(showToast) {
+        gpsStarting = false;
+        if (gpsWatchId !== null && gpsSupported()) {
+          try { navigator.geolocation.clearWatch(gpsWatchId); } catch (error) { /* не критично */ }
+        }
+        gpsWatchId = null;
+        state.gps.follow = false;
+        saveState();
+        updateGpsUi();
+        if (showToast) toast('GPS остановлен.');
+      }
+      function onGpsPosition(position) {
+        const coords = position && position.coords ? position.coords : {};
+        const lat = Number(coords.latitude);
+        const lng = Number(coords.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          gpsErrorText = 'GPS вернул некорректные координаты. Ожидается следующий сигнал.';
+          updateGpsUi();
+          updateHint();
+          return;
+        }
+        lastGps = {
+          lat,
+          lng,
+          accuracy: clamp(Number(coords.accuracy) || 0, 0, 10000),
+          speed: Number.isFinite(coords.speed) ? coords.speed : null,
+          heading: Number.isFinite(coords.heading) ? coords.heading : null,
+          ts: positiveTimestamp(position.timestamp, Date.now())
+        };
+        gpsErrorText = '';
+        renderGpsPosition();
+        updateGpsUi();
+        updateHint();
+      }
+      function onGpsError(error) {
+        const code = Number(error && error.code) || 0;
+        const environmentIssue = gpsEnvironmentIssue();
+        if (code === 1) {
+          if (gpsWatchId !== null && gpsSupported()) {
+            try { navigator.geolocation.clearWatch(gpsWatchId); } catch (clearError) { /* не критично */ }
+          }
+          gpsWatchId = null;
+          gpsStarting = false;
+          gpsErrorText = environmentIssue || 'Доступ к геоданным запрещён. Разрешите геолокацию в настройках сайта/браузера и нажмите GPS снова.';
+        } else if (code === 2) {
+          gpsErrorText = 'GPS не смог определить координаты. Выйдите на открытое место и проверьте системную геолокацию телефона.';
+        } else if (code === 3) {
+          gpsErrorText = 'GPS не ответил за отведённое время. Наблюдение продолжится, если оно уже запущено.';
+        } else {
+          gpsErrorText = environmentIssue || 'Ошибка GPS-модуля.';
+        }
+        updateGpsUi();
+        updateHint();
+        toast(gpsErrorText);
+      }
+
+      function getNextGpsAnchorMode() {
+        const anchors = state.gps.calibration.anchors;
+        return anchors.length >= 1 ? 'anchorB' : 'anchorA';
+      }
+
+      function startGpsBinding(mode) {
+        if (!mapLoaded) {
+          switchTab('mapPanel');
+          toast('Сначала загрузите карту с устройства.');
+          return;
+        }
+        if (!gpsSupported()) {
+          gpsErrorText = gpsEnvironmentIssue() || 'GPS недоступен в этом браузере.';
+          updateGpsUi();
+          updateHint();
+          toast(gpsErrorText);
+          return;
+        }
+        if (!gpsIsRunning()) startGps();
+        if (!lastGps) {
+          switchTab('mapPanel');
+          toast('Дождитесь координат GPS, затем нажмите привязку ещё раз.');
+          return;
+        }
+        if (mode === 'anchorB' && state.gps.calibration.anchors.length < 1) {
+          mode = 'anchorA';
+        }
+        gpsBindingMode = mode === 'anchorB' ? 'anchorB' : 'anchorA';
+        placingMarker = false;
+        draftMarker = null;
+        els.mapViewport.classList.remove('placing');
+        els.mapViewport.classList.add('gps-binding');
+        revealGpsAnchors(ANCHOR_VISIBLE_MS);
+        switchTab('mapPanel');
+        updateMapUi();
+        updateGpsUi();
+        beep('select');
+      }
+
+      function cancelGpsBinding() {
+        gpsBindingMode = null;
+        els.mapViewport.classList.remove('gps-binding');
+        updateMapUi();
+        updateGpsUi();
+        toast('GPS-привязка отменена.');
+      }
+
+      function handleGpsBindingClick(event) {
+        if (Date.now() < suppressClickUntil) return;
+        if (!lastGps) {
+          toast('GPS ещё не выдал координаты. Подождите несколько секунд.');
+          return;
+        }
+        const rect = els.mapViewport.getBoundingClientRect();
+        const point = viewportPointToStage(event.clientX - rect.left, event.clientY - rect.top);
+        const anchor = {
+          lat: lastGps.lat,
+          lng: lastGps.lng,
+          accuracy: lastGps.accuracy,
+          x: clamp(point.x / stageSize.w, 0, 1),
+          y: clamp(point.y / stageSize.h, 0, 1),
+          ts: Date.now()
+        };
+        const anchors = state.gps.calibration.anchors.slice(0, 2);
+        const index = gpsBindingMode === 'anchorB' ? 1 : 0;
+        anchors[index] = anchor;
+        state.gps.calibration.anchors = sanitizeGpsAnchors(anchors);
+        gpsBindingMode = null;
+        els.mapViewport.classList.remove('gps-binding');
+        updateGpsCalibrationFromTwoAnchors();
+        revealGpsAnchors(state.gps.calibration.anchors.length >= 2 ? ANCHOR_VISIBLE_MS : 0);
+        saveState();
+        renderGpsPosition();
+        updateMapUi();
+        updateGpsUi();
+        const label = index === 1 ? 'B' : 'A';
+        const precise = state.gps.calibration.anchors.length >= 2 ? ' Двухточечная привязка активна.' : ' Для точности поставьте точку B или задайте масштаб вручную.';
+        toast(`GPS-точка ${label} сохранена.${precise}`);
+        beep('save');
+      }
+
+      function saveManualGpsCalibration() {
+        state.gps.calibration.metersPerPixel = clamp(Number(els.gpsMetersPerPixel.value) || 1, 0.02, 200);
+        state.gps.calibration.rotationDeg = clamp(Number(els.gpsRotationDeg.value) || 0, -360, 360);
+        saveState();
+        renderGpsPosition();
+        updateGpsUi();
+        toast('Ручные параметры GPS-привязки сохранены.');
+      }
+
+      function updateGpsCalibrationFromTwoAnchors() {
+        const transform = getGpsTransform(true);
+        if (!transform) return;
+        state.gps.calibration.metersPerPixel = clamp(1 / transform.scalePxPerMeter, 0.02, 200);
+        state.gps.calibration.rotationDeg = clamp(radToDeg(transform.angleRad), -360, 360);
+      }
+
+      function resetGpsCalibration(askConfirm) {
+        if (askConfirm && !window.confirm('Сбросить GPS-привязку карты? Задания и заметки останутся.')) return;
+        clearGpsCalibration(true);
+      }
+
+      function clearGpsCalibration(showToast) {
+        state.gps = makeEmptyGpsState();
+        gpsBindingMode = null;
+        clearGpsAnchorTimer();
+        gpsAnchorVisibleUntil = 0;
+        els.mapViewport.classList.remove('gps-binding');
+        saveState();
+        renderGpsPosition();
+        updateMapUi();
+        updateGpsUi();
+        if (showToast) toast('GPS-привязка сброшена.');
+      }
+
+      function getGpsTransform(needTwoAnchors) {
+        const anchors = state.gps.calibration.anchors;
+        if (!anchors.length) return null;
+        const anchor = anchors[0];
+        if (anchors.length >= 2) {
+          const next = anchors[1];
+          const meters = gpsOffsetMeters(anchor, next);
+          const northUp = { x: meters.east, y: -meters.north };
+          const pixels = {
+            x: (next.x - anchor.x) * stageSize.w,
+            y: (next.y - anchor.y) * stageSize.h
+          };
+          const meterDistance = Math.hypot(northUp.x, northUp.y);
+          const pixelDistance = Math.hypot(pixels.x, pixels.y);
+          if (meterDistance >= 2 && pixelDistance >= 3) {
+            return {
+              anchor,
+              scalePxPerMeter: pixelDistance / meterDistance,
+              angleRad: Math.atan2(pixels.y, pixels.x) - Math.atan2(northUp.y, northUp.x),
+              mode: 'two'
+            };
+          }
+        }
+        if (needTwoAnchors) return null;
+        const metersPerPixel = clamp(Number(state.gps.calibration.metersPerPixel) || 1, 0.02, 200);
+        return {
+          anchor,
+          scalePxPerMeter: 1 / metersPerPixel,
+          angleRad: degToRad(clamp(Number(state.gps.calibration.rotationDeg) || 0, -360, 360)),
+          mode: 'one'
+        };
+      }
+
+      function projectGpsToStage(gps) {
+        if (!gps || !mapLoaded) return null;
+        const transform = getGpsTransform(false);
+        if (!transform) return null;
+        const meters = gpsOffsetMeters(transform.anchor, gps);
+        const northUp = { x: meters.east, y: -meters.north };
+        const cos = Math.cos(transform.angleRad);
+        const sin = Math.sin(transform.angleRad);
+        const dx = (northUp.x * cos - northUp.y * sin) * transform.scalePxPerMeter;
+        const dy = (northUp.x * sin + northUp.y * cos) * transform.scalePxPerMeter;
+        return {
+          x: transform.anchor.x * stageSize.w + dx,
+          y: transform.anchor.y * stageSize.h + dy,
+          accuracyPx: clamp((Number(gps.accuracy) || 0) * transform.scalePxPerMeter, 0, Math.max(stageSize.w, stageSize.h))
+        };
+      }
+
+      function gpsOffsetMeters(origin, point) {
+        const lat0 = Number(origin.lat) || 0;
+        const lat1 = Number(point.lat) || 0;
+        const lng0 = Number(origin.lng) || 0;
+        const lng1 = Number(point.lng) || 0;
+        const avgLatRad = degToRad((lat0 + lat1) / 2);
+        return {
+          east: (lng1 - lng0) * 111320 * Math.cos(avgLatRad),
+          north: (lat1 - lat0) * 110540
+        };
+      }
+
+      function centerOnGps(showToast) {
+        if (!mapLoaded) {
+          if (showToast) toast('Сначала загрузите карту.');
+          return;
+        }
+        if (!lastGps) {
+          if (!gpsIsRunning()) startGps();
+          if (showToast) toast('GPS ещё не дал координаты. Подождите сигнал.');
+          return;
+        }
+        if (activeTab !== 'mapPanel') {
+          switchTab('mapPanel');
+          requestFrame(() => centerOnGps(showToast));
+          return;
+        }
+        const point = projectGpsToStage(lastGps);
+        if (!point) {
+          state.gps.follow = false;
+          saveState();
+          updateGpsUi();
+          if (showToast) toast('Сначала сопоставьте GPS с точкой на карте.');
+          return;
+        }
+        const viewport = getViewportMetrics();
+        view.scale = clampMapScale(view.scale);
+        view.x = Math.round(viewport.w / 2 - point.x * view.scale);
+        view.y = Math.round(viewport.h / 2 - point.y * view.scale);
+        viewMode = 'free';
+        constrainView();
+        updateTransform();
+        state.gps.follow = false;
+        saveState();
+        updateGpsUi();
+        if (showToast) toast('Карта один раз центрирована по GPS. Теперь её можно свободно двигать.');
+      }
+      function revealGpsAnchors(durationMs) {
+        clearGpsAnchorTimer();
+        if (durationMs === 0) {
+          gpsAnchorVisibleUntil = Number.POSITIVE_INFINITY;
+        } else {
+          gpsAnchorVisibleUntil = Date.now() + Math.max(1000, Number(durationMs) || ANCHOR_VISIBLE_MS);
+          gpsAnchorTimer = window.setTimeout(() => {
+            gpsAnchorTimer = 0;
+            renderGpsPosition();
+          }, Math.max(1000, gpsAnchorVisibleUntil - Date.now() + 60));
+        }
+        renderGpsPosition();
+      }
+
+      function clearGpsAnchorTimer() {
+        if (gpsAnchorTimer) {
+          window.clearTimeout(gpsAnchorTimer);
+          gpsAnchorTimer = 0;
+        }
+      }
+
+      function shouldRenderGpsAnchors(anchors) {
+        if (!anchors.length) return false;
+        if (gpsBindingMode) return true;
+        if (anchors.length < 2) return true;
+        return Date.now() < gpsAnchorVisibleUntil;
+      }
+
+      function renderGpsPosition() {
+        clearElement(els.gpsLayer);
+        const anchors = state.gps.calibration.anchors || [];
+        if (shouldRenderGpsAnchors(anchors)) {
+          anchors.forEach((anchor, index) => {
+            const mark = document.createElement('div');
+            mark.className = 'gps-anchor';
+            mark.textContent = index === 0 ? 'A' : 'B';
+            mark.style.left = `${anchor.x * 100}%`;
+            mark.style.top = `${anchor.y * 100}%`;
+            els.gpsLayer.appendChild(mark);
+          });
+        }
+        const point = projectGpsToStage(lastGps);
+        if (!point) return;
+        if (point.accuracyPx > 0) {
+          const accuracy = document.createElement('div');
+          accuracy.className = 'gps-accuracy';
+          const diameter = clamp(point.accuracyPx * 2, 16, Math.max(stageSize.w, stageSize.h));
+          accuracy.style.left = `${point.x}px`;
+          accuracy.style.top = `${point.y}px`;
+          accuracy.style.width = `${diameter}px`;
+          accuracy.style.height = `${diameter}px`;
+          els.gpsLayer.appendChild(accuracy);
+        }
+        const dot = document.createElement('div');
+        dot.className = 'user-position';
+        dot.style.left = `${point.x}px`;
+        dot.style.top = `${point.y}px`;
+        els.gpsLayer.appendChild(dot);
+      }
+
+      function updateGpsUi() {
+        const running = gpsIsRunning();
+        const anchors = state.gps.calibration.anchors || [];
+        const secureWarning = gpsEnvironmentIssue() ? ` · ${gpsEnvironmentIssue()}` : '';
+        const permissionText = gpsPermissionState !== 'unknown' ? ` · доступ: ${translatePermissionState(gpsPermissionState)}` : '';
+        const gpsText = lastGps
+          ? `последний сигнал: ${lastGps.lat.toFixed(6)}, ${lastGps.lng.toFixed(6)} · точность ±${Math.round(lastGps.accuracy || 0)} м · ${formatDate(lastGps.ts)}`
+          : (gpsStarting ? 'ожидание разрешения геоданных...' : (running ? 'ожидание сигнала GPS...' : 'GPS выключен. Координаты не запрашивались.'));
+        const twoAnchorTransform = getGpsTransform(true);
+        const calibrationText = anchors.length >= 2 && twoAnchorTransform
+          ? `привязка: точная, A+B · ${getEffectiveMetersPerPixelText()}`
+          : anchors.length >= 2
+            ? `привязка: A+B заданы слишком близко · используется ручной масштаб`
+            : anchors.length === 1
+              ? `привязка: только A · ${getEffectiveMetersPerPixelText()} · для точности добавьте B`
+              : 'привязка: нет';
+        const errorText = gpsErrorText ? ` · ошибка: ${gpsErrorText}` : '';
+        els.gpsStatusText.textContent = `${gpsText}${permissionText} · ${calibrationText}${errorText}${secureWarning}`;
+        els.gpsBtnTop.textContent = running ? 'gps●' : 'gps';
+        els.gpsBtnTop.setAttribute('aria-label', running ? 'GPS включён или запрашивает доступ' : 'GPS выключен');
+        els.gpsBtnTop.classList.toggle('active', running);
+        els.gpsBtnTop.setAttribute('aria-pressed', String(running));
+        els.gpsToggleBtn.textContent = running ? 'GPS стоп' : 'GPS';
+        els.gpsToggleBtn.classList.toggle('active', running);
+        els.gpsToggleBtn.setAttribute('aria-pressed', String(running));
+        els.gpsToggleDataBtn.textContent = running ? 'Остановить GPS' : 'Включить GPS';
+        els.gpsToggleDataBtn.classList.toggle('active', running);
+        els.gpsToggleDataBtn.setAttribute('aria-pressed', String(running));
+        els.gpsBindBtn.textContent = anchors.length >= 1 ? 'Точка B' : 'Привязка';
+        els.gpsBindBtn.classList.toggle('active', Boolean(gpsBindingMode));
+        els.gpsBindBtn.classList.toggle('mode-warning', Boolean(gpsBindingMode));
+        els.gpsBindBDataBtn.disabled = anchors.length < 1;
+        els.gpsCenterBtn.disabled = !mapLoaded || !lastGps || !anchors.length;
+        els.gpsCenterDataBtn.disabled = !mapLoaded || !lastGps || !anchors.length;
+        els.gpsMetersPerPixel.value = String(clamp(Number(state.gps.calibration.metersPerPixel) || 1, 0.02, 200));
+        els.gpsRotationDeg.value = String(Math.round(clamp(Number(state.gps.calibration.rotationDeg) || 0, -360, 360) * 100) / 100);
+      }
+
+      function translatePermissionState(stateValue) {
+        if (stateValue === 'granted') return 'разрешён';
+        if (stateValue === 'prompt') return 'будет запрос';
+        if (stateValue === 'denied') return 'запрещён';
+        return 'неизвестно';
+      }
+
+      function getEffectiveMetersPerPixelText() {
+        const transform = getGpsTransform(false);
+        if (!transform) return 'масштаб не задан';
+        const metersPerPixel = clamp(1 / transform.scalePxPerMeter, 0.02, 200);
+        const mode = transform.mode === 'two' ? 'авто' : 'ручн.';
+        return `${mode} ${metersPerPixel.toFixed(2)} м/пикс`;
+      }
+
+      function degToRad(deg) {
+        return (Number(deg) || 0) * Math.PI / 180;
+      }
+
+      function radToDeg(rad) {
+        let deg = (Number(rad) || 0) * 180 / Math.PI;
+        while (deg > 360) deg -= 360;
+        while (deg < -360) deg += 360;
+        return deg;
+      }
+      function renderMarkers() {
+        clearElement(els.markerLayer);
+        els.markerLayer.classList.toggle('dense', state.tasks.length > 150);
+        state.tasks.forEach((task) => {
+          const marker = document.createElement('button');
+          marker.type = 'button';
+          marker.className = `marker type-${task.type}${task.status === 'done' ? ' done' : ''}${task.id === selectedTaskId ? ' selected' : ''}`;
+          marker.style.left = `${task.x * 100}%`;
+          marker.style.top = `${task.y * 100}%`;
+          marker.dataset.symbol = TYPE_SYMBOLS[task.type] || TYPE_SYMBOLS.side;
+          marker.setAttribute('aria-label', `${TYPE_LABELS[task.type] || 'метка'}: ${task.title}`);
+          marker.setAttribute('aria-pressed', String(task.id === selectedTaskId));
+          marker.title = `${TYPE_SYMBOLS[task.type] || TYPE_SYMBOLS.side} ${TYPE_LABELS[task.type] || 'метка'} — ${task.title}`;
+          marker.addEventListener('pointerdown', (event) => event.stopPropagation());
+          marker.addEventListener('click', (event) => {
+            event.stopPropagation();
+            selectTask(task.id, true);
+          });
+          els.markerLayer.appendChild(marker);
+        });
+      }
+
+      function renderTasks() {
+        clearElement(els.tasksList);
+        const tasks = state.tasks
+          .filter((task) => activeFilter === 'all' || task.status === activeFilter)
+          .sort((a, b) => b.createdAt - a.createdAt);
+        if (!tasks.length) {
+          els.tasksList.appendChild(emptyBlock(activeFilter === 'all'
+            ? 'Заданий пока нет. Загрузите карту и поставьте первую метку.'
+            : 'В этом фильтре заданий нет.'));
+          renderSummary();
+          return;
+        }
+        tasks.forEach((task) => els.tasksList.appendChild(createTaskCard(task)));
+        renderSummary();
+      }
+
+      function createTaskCard(task) {
+        const card = document.createElement('article');
+        card.className = `task-card${task.id === selectedTaskId ? ' selected' : ''}`;
+
+        const head = document.createElement('div');
+        head.className = 'task-title-row';
+        const title = document.createElement('h2');
+        title.textContent = task.title;
+        const status = document.createElement('span');
+        status.className = `badge ${task.status === 'done' ? 'ok' : 'warn'}`;
+        status.textContent = task.status === 'done' ? 'выполнено' : 'активно';
+        head.append(title, status);
+
+        const description = document.createElement('p');
+        description.textContent = task.description || 'Описание не указано.';
+
+        const meta = document.createElement('div');
+        meta.className = 'meta-row';
+        meta.append(
+          badge(`${TYPE_SYMBOLS[task.type] || TYPE_SYMBOLS.side} ${TYPE_LABELS[task.type] || 'метка'}`),
+          badge(`X ${Math.round(task.x * 1000)} / Y ${Math.round(task.y * 1000)}`),
+          badge(formatDate(task.updatedAt || task.createdAt))
+        );
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+        actions.append(
+          smallButton('На карте', 'secondary-btn', () => focusTaskOnMap(task.id)),
+          smallButton('Править', 'secondary-btn', () => openMarkerModal(task)),
+          smallButton(task.status === 'done' ? 'Активно' : 'Готово', 'primary-btn', () => toggleTaskStatus(task.id)),
+          smallButton('Удалить', 'danger-btn', () => deleteTask(task.id))
+        );
+
+        card.append(head, description, meta, actions);
+        return card;
+      }
+
+      function renderNotes() {
+        clearElement(els.notesList);
+        const notes = [...state.notes].sort((a, b) => b.updatedAt - a.updatedAt);
+        if (!notes.length) {
+          els.notesList.appendChild(emptyBlock('Заметок пока нет. Создайте запись в журнале КПК.'));
+          renderSummary();
+          return;
+        }
+        notes.forEach((note) => els.notesList.appendChild(createNoteCard(note)));
+        renderSummary();
+      }
+
+      function createNoteCard(note) {
+        const card = document.createElement('article');
+        card.className = 'note-card';
+        const head = document.createElement('div');
+        head.className = 'note-title-row';
+        const title = document.createElement('h2');
+        title.textContent = note.title;
+        const updated = document.createElement('span');
+        updated.className = 'badge';
+        updated.textContent = formatDate(note.updatedAt);
+        head.append(title, updated);
+
+        const body = document.createElement('p');
+        body.textContent = note.body || 'Пустая заметка.';
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+        actions.append(
+          smallButton('Править', 'secondary-btn', () => editNote(note.id)),
+          smallButton('Удалить', 'danger-btn', () => deleteNote(note.id))
+        );
+        card.append(head, body, actions);
+        return card;
+      }
+
+      function renderSummary() {
+        const active = state.tasks.filter((task) => task.status === 'active').length;
+        const done = state.tasks.filter((task) => task.status === 'done').length;
+        const gpsInfo = state.gps.calibration.anchors.length ? ` · GPS-точек: ${state.gps.calibration.anchors.length}` : '';
+        els.summaryText.textContent = `карта: ${mapLoaded ? 'загружена' : 'нет'} · заданий: ${state.tasks.length} · активных: ${active} · выполненных: ${done} · заметок: ${state.notes.length}${gpsInfo}`;
+      }
+
+      function selectTask(taskId, showSheet) {
+        selectedTaskId = taskId;
+        renderMarkers();
+        renderTasks();
+        if (showSheet) showTaskSheet(taskId);
+        beep('select');
+      }
+      function showTaskSheet(taskId) {
+        const task = state.tasks.find((item) => item.id === taskId);
+        if (!task) {
+          hideSheet();
+          return;
+        }
+        clearElement(els.sheetContent);
+
+        const title = document.createElement('h2');
+        title.textContent = task.title;
+        const description = document.createElement('p');
+        description.textContent = task.description || 'Описание не указано.';
+
+        const meta = document.createElement('div');
+        meta.className = 'meta-row';
+        meta.append(
+          badge(`${TYPE_SYMBOLS[task.type] || TYPE_SYMBOLS.side} ${TYPE_LABELS[task.type] || 'метка'}`),
+          badge(task.status === 'done' ? 'выполнено' : 'активно', task.status === 'done' ? 'ok' : 'warn'),
+          badge(`X ${Math.round(task.x * 1000)} / Y ${Math.round(task.y * 1000)}`)
+        );
+
+        const actions = document.createElement('div');
+        actions.className = 'sheet-actions wrap';
+        actions.style.marginTop = '12px';
+        actions.append(
+          smallButton('Править', 'secondary-btn', () => openMarkerModal(task)),
+          smallButton(task.status === 'done' ? 'Сделать активным' : 'Отметить выполненным', 'primary-btn', () => toggleTaskStatus(task.id)),
+          smallButton('Закрыть', 'secondary-btn', hideSheet)
+        );
+
+        els.sheetContent.append(title, description, meta, actions);
+        els.questSheet.classList.add('visible');
+        els.questSheet.classList.remove('collapsed');
+        els.sheetToggle.setAttribute('aria-expanded', 'true');
+      }
+      function hideSheet() {
+        els.questSheet.classList.remove('visible', 'collapsed');
+        els.sheetToggle.setAttribute('aria-expanded', 'false');
+      }
+      function focusTaskOnMap(taskId) {
+        const task = state.tasks.find((item) => item.id === taskId);
+        if (!task || !mapLoaded) return;
+        selectTask(taskId, true);
+        switchTab('mapPanel');
+        requestFrame(() => {
+          const viewport = getViewportMetrics();
+          const targetScale = clampMapScale(Math.max(view.scale, getFitScale() * 2.2));
+          view.scale = targetScale;
+          view.x = viewport.w / 2 - task.x * stageSize.w * view.scale;
+          view.y = viewport.h / 2 - task.y * stageSize.h * view.scale;
+          viewMode = 'free';
+          constrainView();
+          updateTransform();
+        });
+      }
+      function openMarkerModal(taskOrPoint) {
+        const isExisting = Boolean(taskOrPoint && taskOrPoint.id);
+        editingMarkerId = isExisting ? taskOrPoint.id : null;
+        draftMarker = isExisting ? null : {
+          x: clamp(Number(taskOrPoint && taskOrPoint.x), 0, 1),
+          y: clamp(Number(taskOrPoint && taskOrPoint.y), 0, 1)
+        };
+        markerSaveLocked = false;
+        modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        els.markerModalTitle.textContent = isExisting ? 'Редактирование метки' : 'Новая метка';
+        els.markerTitle.value = isExisting ? taskOrPoint.title : '';
+        els.markerDesc.value = isExisting ? taskOrPoint.description : '';
+        els.markerType.value = isExisting ? taskOrPoint.type : 'side';
+        els.markerStatus.value = isExisting ? taskOrPoint.status : 'active';
+        els.deleteMarkerBtn.classList.toggle('hidden', !isExisting);
+        els.markerModal.classList.add('visible');
+        els.markerModal.setAttribute('aria-hidden', 'false');
+        requestFrame(() => els.markerTitle.focus());
+      }
+      function closeMarkerModal() {
+        const wasVisible = els.markerModal.classList.contains('visible');
+        els.markerModal.classList.remove('visible');
+        els.markerModal.setAttribute('aria-hidden', 'true');
+        editingMarkerId = null;
+        draftMarker = null;
+        markerSaveLocked = false;
+        if (wasVisible && modalReturnFocus && document.contains(modalReturnFocus)) {
+          modalReturnFocus.focus();
+        }
+        modalReturnFocus = null;
+      }
+      function saveMarkerFromModal() {
+        if (markerSaveLocked || !els.markerModal.classList.contains('visible')) return;
+        const title = normalizeText(els.markerTitle.value, 80);
+        const description = normalizeText(els.markerDesc.value, 4000);
+        const type = Object.prototype.hasOwnProperty.call(TYPE_LABELS, els.markerType.value) ? els.markerType.value : 'side';
+        const status = els.markerStatus.value === 'done' ? 'done' : 'active';
+        if (!title) {
+          toast('Введите название метки.');
+          els.markerTitle.focus();
+          return;
+        }
+        markerSaveLocked = true;
+        const now = Date.now();
+        if (editingMarkerId) {
+          const task = state.tasks.find((item) => item.id === editingMarkerId);
+          if (!task) {
+            toast('Метка уже удалена.');
+            closeMarkerModal();
+            return;
+          }
+          task.title = title;
+          task.description = description;
+          task.type = type;
+          task.status = status;
+          task.updatedAt = now;
+          selectedTaskId = task.id;
+        } else {
+          if (state.tasks.length >= 500) {
+            markerSaveLocked = false;
+            toast('Достигнут лимит 500 меток. Удалите ненужные объекты.');
+            return;
+          }
+          const point = draftMarker || { x: 0.5, y: 0.5 };
+          const task = {
+            id: makeId('task'),
+            title,
+            description,
+            x: clamp(point.x, 0, 1),
+            y: clamp(point.y, 0, 1),
+            type,
+            status,
+            createdAt: now,
+            updatedAt: now
+          };
+          state.tasks.push(task);
+          selectedTaskId = task.id;
+        }
+        saveState();
+        renderAll();
+        if (selectedTaskId && activeTab === 'mapPanel') showTaskSheet(selectedTaskId);
+        else hideSheet();
+        closeMarkerModal();
+        beep('save');
+        toast('Метка сохранена.');
+      }
+      function deleteMarkerFromModal() {
+        if (!editingMarkerId) return;
+        const task = state.tasks.find((item) => item.id === editingMarkerId);
+        if (!task) {
+          closeMarkerModal();
+          return;
+        }
+        if (!window.confirm(`Удалить метку «${task.title}»?`)) return;
+        deleteTask(editingMarkerId, true);
+        closeMarkerModal();
+      }
+
+      function deleteTask(taskId, skipConfirm) {
+        const task = state.tasks.find((item) => item.id === taskId);
+        if (!task) return;
+        if (!skipConfirm && !window.confirm(`Удалить метку «${task.title}»?`)) return;
+        state.tasks = state.tasks.filter((item) => item.id !== taskId);
+        if (selectedTaskId === taskId) {
+          selectedTaskId = null;
+          hideSheet();
+        }
+        saveState();
+        renderAll();
+        beep('delete');
+        toast('Метка удалена.');
+      }
+      function toggleTaskStatus(taskId) {
+        const task = state.tasks.find((item) => item.id === taskId);
+        if (!task) return;
+        task.status = task.status === 'done' ? 'active' : 'done';
+        task.updatedAt = Date.now();
+        saveState();
+        renderAll();
+        if (selectedTaskId === taskId && activeTab === 'mapPanel') showTaskSheet(taskId);
+        beep('save');
+      }
+
+      function newNoteDraft() {
+        editingNoteId = null;
+        els.noteTitle.value = '';
+        els.noteBody.value = '';
+        els.noteTitle.focus();
+        beep('select');
+      }
+
+      function clearNoteForm() {
+        editingNoteId = null;
+        els.noteTitle.value = '';
+        els.noteBody.value = '';
+        toast('Форма заметки очищена.');
+      }
+
+      function editNote(noteId) {
+        const note = state.notes.find((item) => item.id === noteId);
+        if (!note) return;
+        editingNoteId = note.id;
+        els.noteTitle.value = note.title;
+        els.noteBody.value = note.body;
+        els.noteTitle.focus();
+        beep('select');
+      }
+
+      function saveNote() {
+        const title = normalizeText(els.noteTitle.value, 80) || 'Без названия';
+        const body = normalizeText(els.noteBody.value, 12000);
+        if (!body && title === 'Без названия') {
+          toast('Введите текст или заголовок заметки.');
+          els.noteTitle.focus();
+          return;
+        }
+        const now = Date.now();
+        if (editingNoteId) {
+          const note = state.notes.find((item) => item.id === editingNoteId);
+          if (note) {
+            note.title = title;
+            note.body = body;
+            note.updatedAt = now;
+          } else {
+            editingNoteId = null;
+          }
+        }
+        if (!editingNoteId) {
+          if (state.notes.length >= 500) {
+            toast('Достигнут лимит 500 заметок. Удалите ненужные записи.');
+            return;
+          }
+          state.notes.push({ id: makeId('note'), title, body, createdAt: now, updatedAt: now });
+        }
+        editingNoteId = null;
+        els.noteTitle.value = '';
+        els.noteBody.value = '';
+        saveState();
+        renderNotes();
+        beep('save');
+        toast('Заметка сохранена.');
+      }
+
+      function deleteNote(noteId) {
+        const note = state.notes.find((item) => item.id === noteId);
+        if (!note) return;
+        if (!window.confirm(`Удалить заметку «${note.title}»?`)) return;
+        state.notes = state.notes.filter((item) => item.id !== noteId);
+        if (editingNoteId === noteId) clearNoteForm();
+        saveState();
+        renderNotes();
+        beep('delete');
+        toast('Заметка удалена.');
+      }
+
+      function exportData() {
+        const payload = {
+          app: 'zone-pda-single-file',
+          version: 6,
+          exportedAt: new Date().toISOString(),
+          map: sanitizeMapMeta(state.map),
+          tasks: sanitizeTasks(state.tasks, 500),
+          notes: sanitizeNotes(state.notes, 500),
+          gps: sanitizeGps(state.gps)
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `zone-pda-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        beep('save');
+        toast('Экспорт JSON подготовлен.');
+      }
+      function handleImportFile() {
+        const file = els.importFile.files && els.importFile.files[0];
+        els.importFile.value = '';
+        if (!file) return;
+        if (file.size > MAX_JSON_BYTES) {
+          toast('JSON слишком большой. Лимит: 4 МБ.');
+          return;
+        }
+        const generation = ++importGeneration;
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (generation !== importGeneration) return;
+          try {
+            const parsed = JSON.parse(String(reader.result || ''));
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+              toast('Файл не похож на резервную копию КПК.');
+              return;
+            }
+            const tasks = sanitizeTasks(parsed.tasks, 500);
+            const notes = sanitizeNotes(parsed.notes, 500);
+            const importedGps = parsed && typeof parsed.gps === 'object' ? sanitizeGps(parsed.gps) : null;
+            if (!Array.isArray(parsed.tasks) && !Array.isArray(parsed.notes) && !importedGps) {
+              toast('В JSON не найдены задания, заметки или GPS-привязка.');
+              return;
+            }
+            if (!window.confirm('Импорт заменит текущие задания и заметки. GPS-привязка заменится только если она есть в JSON. Продолжить?')) return;
+            state.tasks = tasks;
+            state.notes = notes;
+            if (importedGps) state.gps = importedGps;
+            selectedTaskId = null;
+            editingNoteId = null;
+            saveState();
+            renderAll();
+            hideSheet();
+            beep('save');
+            toast('Импорт завершён. Карта выбирается отдельно с устройства.');
+          } catch (error) {
+            console.warn('Import failed:', error);
+            toast('Не удалось прочитать JSON.');
+          }
+        };
+        reader.onerror = () => {
+          if (generation === importGeneration) toast('Ошибка чтения файла JSON.');
+        };
+        reader.readAsText(file);
+      }
+      async function forgetMap() {
+        if (!mapLoaded && !state.map.saved) return;
+        if (!window.confirm('Удалить сохранённую карту из КПК? Задания и заметки останутся.')) return;
+        const operationGeneration = ++mapLoadGeneration;
+        revokeMapUrl();
+        mapLoaded = false;
+        state.map = { name: '', type: '', size: 0, w: 1000, h: 1200, saved: false };
+        state.gps = makeEmptyGpsState();
+        clearGpsAnchorTimer();
+        gpsAnchorVisibleUntil = 0;
+        stageSize = { w: 1000, h: 1200 };
+        viewMode = 'fit';
+        els.zoneMap.removeAttribute('src');
+        els.zoneMap.classList.remove('loaded');
+        applyStageSize();
+        centerMap(false);
+        saveState();
+        updateMapUi();
+        renderGpsPosition();
+        updateGpsUi();
+        renderSummary();
+        try {
+          await queueMapStorage(() => idbDelete(MAP_KEY));
+        } catch (error) {
+          console.warn('Map delete failed:', error);
+        }
+        if (operationGeneration === mapLoadGeneration) toast('Карта удалена. Метки сохранены, GPS-привязка сброшена.');
+      }
+      async function resetAll() {
+        if (!window.confirm('Сбросить КПК? Будут удалены карта, задания и заметки. Стартовые задания не создаются.')) return;
+        const operationGeneration = ++mapLoadGeneration;
+        revokeMapUrl();
+        stopGps(false);
+        const keepBooted = state.booted;
+        const keepSound = state.sound;
+        state = makeEmptyState();
+        state.booted = keepBooted;
+        state.sound = keepSound;
+        mapLoaded = false;
+        selectedTaskId = null;
+        editingNoteId = null;
+        editingMarkerId = null;
+        draftMarker = null;
+        gpsBindingMode = null;
+        clearGpsAnchorTimer();
+        gpsAnchorVisibleUntil = 0;
+        lastGps = null;
+        gpsErrorText = '';
+        els.mapViewport.classList.remove('gps-binding');
+        stageSize = { w: 1000, h: 1200 };
+        viewMode = 'fit';
+        els.zoneMap.removeAttribute('src');
+        els.zoneMap.classList.remove('loaded');
+        applyStageSize();
+        saveState();
+        centerMap(false);
+        hideSheet();
+        renderAll();
+        beep('delete');
+        try {
+          await queueMapStorage(() => idbDelete(MAP_KEY));
+        } catch (error) {
+          console.warn('DB reset failed:', error);
+        }
+        if (operationGeneration === mapLoadGeneration) toast('КПК сброшен. Списки пустые.');
+      }
+
+      function toggleSound() {
+        state.sound = !state.sound;
+        saveState();
+        updateSoundButton();
+        if (state.sound) beep('start');
+      }
+
+      function updateSoundButton() {
+        els.soundBtn.textContent = state.sound ? 'звук' : 'тихо';
+        els.soundBtn.setAttribute('aria-label', state.sound ? 'Звук включён' : 'Звук выключен');
+        els.soundBtn.classList.toggle('active', Boolean(state.sound));
+        els.soundBtn.setAttribute('aria-pressed', String(Boolean(state.sound)));
+      }
+
+      function beep(kind) {
+        if (!state.sound) return;
+        try {
+          const AudioCtor = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtor) return;
+          audioContext = audioContext || new AudioCtor();
+          const now = audioContext.currentTime;
+          const gain = audioContext.createGain();
+          const osc = audioContext.createOscillator();
+          const map = {
+            tick: [520, 0.035, 0.025],
+            select: [720, 0.055, 0.035],
+            save: [880, 0.08, 0.04],
+            delete: [180, 0.11, 0.06],
+            start: [360, 0.14, 0.05]
+          };
+          const [freq, dur, volume] = map[kind] || map.tick;
+          osc.type = kind === 'delete' ? 'sawtooth' : 'square';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(volume, now + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          osc.start(now);
+          osc.stop(now + dur + 0.02);
+        } catch (error) {
+          // На некоторых мобильных браузерах звук может быть заблокирован. Это не мешает работе КПК.
+        }
+      }
+      function openDb() {
+        return new Promise((resolve, reject) => {
+          if (!window.indexedDB) {
+            reject(new Error('IndexedDB недоступен'));
+            return;
+          }
+          let settled = false;
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+          };
+          request.onsuccess = () => {
+            if (settled) {
+              request.result.close();
+              return;
+            }
+            settled = true;
+            resolve(request.result);
+          };
+          request.onerror = () => {
+            if (settled) return;
+            settled = true;
+            reject(request.error || new Error('Ошибка IndexedDB'));
+          };
+          request.onblocked = () => {
+            if (settled) return;
+            settled = true;
+            reject(new Error('IndexedDB заблокирован другой вкладкой'));
+          };
+        });
+      }
+      async function idbGet(key) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          let result;
+          let settled = false;
+          const finishReject = (error) => {
+            if (settled) return;
+            settled = true;
+            db.close();
+            reject(error);
+          };
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const request = tx.objectStore(DB_STORE).get(key);
+          request.onsuccess = () => { result = request.result; };
+          request.onerror = () => finishReject(request.error || new Error('Ошибка чтения IndexedDB'));
+          tx.oncomplete = () => {
+            if (settled) return;
+            settled = true;
+            db.close();
+            resolve(result);
+          };
+          tx.onerror = () => finishReject(tx.error || new Error('Ошибка транзакции IndexedDB'));
+          tx.onabort = () => finishReject(tx.error || new Error('Транзакция IndexedDB отменена'));
+        });
+      }
+      async function idbSet(key, value) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          let settled = false;
+          const finishReject = (error) => {
+            if (settled) return;
+            settled = true;
+            db.close();
+            reject(error);
+          };
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const request = tx.objectStore(DB_STORE).put(value, key);
+          request.onerror = () => finishReject(request.error || new Error('Ошибка записи IndexedDB'));
+          tx.oncomplete = () => {
+            if (settled) return;
+            settled = true;
+            db.close();
+            resolve(true);
+          };
+          tx.onerror = () => finishReject(tx.error || new Error('Ошибка транзакции IndexedDB'));
+          tx.onabort = () => finishReject(tx.error || new Error('Транзакция IndexedDB отменена'));
+        });
+      }
+      async function idbDelete(key) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          let settled = false;
+          const finishReject = (error) => {
+            if (settled) return;
+            settled = true;
+            db.close();
+            reject(error);
+          };
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const request = tx.objectStore(DB_STORE).delete(key);
+          request.onerror = () => finishReject(request.error || new Error('Ошибка удаления IndexedDB'));
+          tx.oncomplete = () => {
+            if (settled) return;
+            settled = true;
+            db.close();
+            resolve(true);
+          };
+          tx.onerror = () => finishReject(tx.error || new Error('Ошибка транзакции IndexedDB'));
+          tx.onabort = () => finishReject(tx.error || new Error('Транзакция IndexedDB отменена'));
+        });
+      }
+
+      function smallButton(text, className, action) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.textContent = text;
+        button.addEventListener('click', action);
+        return button;
+      }
+
+      function badge(text, tone) {
+        const item = document.createElement('span');
+        item.className = `badge${tone ? ' ' + tone : ''}`;
+        item.textContent = text;
+        return item;
+      }
+
+      function emptyBlock(text) {
+        const block = document.createElement('div');
+        block.className = 'empty-list';
+        block.textContent = text;
+        return block;
+      }
+
+      function clearElement(element) {
+        while (element.firstChild) element.removeChild(element.firstChild);
+      }
+
+      function normalizeText(value, maxLength) {
+        return String(value || '').replace(/\u0000/g, '').trim().slice(0, maxLength);
+      }
+
+      function makeId(prefix) {
+        const random = Math.random().toString(36).slice(2, 9);
+        return `${prefix}-${Date.now().toString(36)}-${random}`;
+      }
+
+      function clamp(value, min, max) {
+        const number = Number.isFinite(value) ? value : min;
+        return Math.min(max, Math.max(min, number));
+      }
+
+      function queueMapStorage(operation) {
+        const task = mapStorageQueue.then(operation, operation);
+        mapStorageQueue = task.catch(() => undefined);
+        return task;
+      }
+
+      function syncAccessibilityState() {
+        els.tabPanels.forEach((panel) => panel.setAttribute('aria-hidden', String(panel.id !== activeTab)));
+        els.navButtons.forEach((button) => {
+          if (button.dataset.tab === activeTab) button.setAttribute('aria-current', 'page');
+          else button.removeAttribute('aria-current');
+        });
+        els.filterButtons.forEach((button) => button.setAttribute('aria-pressed', String((button.dataset.filter || 'all') === activeFilter)));
+        els.sheetToggle.setAttribute('aria-expanded', 'false');
+      }
+
+      function positiveTimestamp(value, fallback) {
+        const number = Number(value);
+        const max = Date.now() + 10 * 365 * 24 * 60 * 60 * 1000;
+        return Number.isFinite(number) && number > 0 && number <= max ? number : fallback;
+      }
+
+      function isSupportedMapBlob(blob, name) {
+        if (!blob || typeof blob.size !== 'number') return false;
+        const type = String(blob.type || '').toLowerCase();
+        if (type === 'image/svg+xml') return false;
+        if (SUPPORTED_MAP_TYPES.has(type)) return true;
+        if (type) return false;
+        const extension = String(name || '').toLowerCase().split('.').pop();
+        return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'avif'].includes(extension);
+      }
+
+      function getFitScale() {
+        const viewport = getViewportMetrics();
+        const mapW = Math.max(1, Number(stageSize.w) || 1);
+        const mapH = Math.max(1, Number(stageSize.h) || 1);
+        const padding = viewport.w < 360 ? 4 : 8;
+        const availableW = Math.max(1, viewport.w - padding * 2);
+        const availableH = Math.max(1, viewport.h - padding * 2);
+        return clamp(Math.min(availableW / mapW, availableH / mapH), MIN_SCALE, MAX_SCALE);
+      }
+
+      function clampMapScale(value) {
+        return clamp(Number(value) || getFitScale(), getFitScale(), MAX_SCALE);
+      }
+
+      function initializeViewportObserver() {
+        if (typeof ResizeObserver === 'function') {
+          viewportObserver = new ResizeObserver((entries) => {
+            const entry = entries && entries[0];
+            if (!entry || entry.contentRect.width < 2 || entry.contentRect.height < 2) return;
+            scheduleViewportSync();
+          });
+          viewportObserver.observe(els.mapViewport);
+        }
+      }
+
+      function scheduleViewportSync() {
+        if (viewportSyncFrame) return;
+        viewportSyncFrame = requestFrame(() => {
+          viewportSyncFrame = 0;
+          if (activeTab !== 'mapPanel') return;
+          const viewport = getViewportMetrics();
+          if (viewport.w < 2 || viewport.h < 2) return;
+          if (viewMode === 'fit' || isViewApproximatelyCentered()) centerMap(false);
+          else {
+            constrainView();
+            updateTransform();
+          }
+        });
+      }
+
+      function resetPointerInteraction() {
+        pointers.clear();
+        dragStart = null;
+        pinchStart = null;
+        els.mapViewport.classList.remove('dragging');
+      }
+      function handlePointerCaptureLost(event) {
+        if (!pointers.has(event.pointerId)) return;
+        handlePointerUp(event);
+      }
+
+      function handleMapKeyboard(event) {
+        if (!mapLoaded || event.altKey || event.ctrlKey || event.metaKey) return;
+        const viewport = getViewportMetrics();
+        const stepX = Math.max(24, viewport.w * (event.shiftKey ? 0.3 : 0.12));
+        const stepY = Math.max(24, viewport.h * (event.shiftKey ? 0.3 : 0.12));
+        let handled = true;
+        if (event.key === 'ArrowLeft') view.x += stepX;
+        else if (event.key === 'ArrowRight') view.x -= stepX;
+        else if (event.key === 'ArrowUp') view.y += stepY;
+        else if (event.key === 'ArrowDown') view.y -= stepY;
+        else if (event.key === '+' || event.key === '=') zoomAtViewportCenter(view.scale * 1.22);
+        else if (event.key === '-' || event.key === '_') zoomAtViewportCenter(view.scale / 1.22);
+        else if (event.key === '0' || event.key === 'Home') centerMap(false);
+        else handled = false;
+        if (!handled) return;
+        event.preventDefault();
+        if (event.key.startsWith('Arrow')) {
+          viewMode = 'free';
+          constrainView();
+          updateTransform();
+        }
+      }
+
+      function trapModalFocus(event) {
+        if (event.key !== 'Tab' || !els.markerModal.classList.contains('visible')) return;
+        const focusable = Array.from(els.markerModal.querySelectorAll('button:not(:disabled):not(.hidden), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])'))
+          .filter((item) => item.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+      function cleanupRuntime(event) {
+        resetPointerInteraction();
+        clearGpsAnchorTimer();
+        if (gpsWatchId !== null && gpsSupported()) {
+          try { navigator.geolocation.clearWatch(gpsWatchId); } catch (error) { /* завершение страницы */ }
+        }
+        gpsWatchId = null;
+        gpsStarting = false;
+        if (gpsPermissionStatus) gpsPermissionStatus.onchange = null;
+        if (!event || !event.persisted) {
+          if (viewportObserver) viewportObserver.disconnect();
+          viewportObserver = null;
+          window.clearTimeout(toastTimer);
+          if (audioContext && typeof audioContext.close === 'function') {
+            try { audioContext.close(); } catch (error) { /* завершение страницы */ }
+          }
+          audioContext = null;
+          revokeMapUrl();
+        }
+      }
+
+      function positiveNumber(value, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) && number > 0 ? number : fallback;
+      }
+
+      function distance(a, b) {
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
+
+      function midpoint(a, b) {
+        return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      }
+
+      function getPointerPair() {
+        return Array.from(pointers.values()).slice(0, 2);
+      }
+
+      function formatDate(timestamp) {
+        try {
+          return new Intl.DateTimeFormat('ru-RU', {
+            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+          }).format(new Date(timestamp));
+        } catch (error) {
+          return 'дата неизвестна';
+        }
+      }
+
+      function formatBytes(bytes) {
+        const value = Number(bytes) || 0;
+        if (value < 1024) return `${value} Б`;
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} КБ`;
+        return `${(value / 1024 / 1024).toFixed(1)} МБ`;
+      }
+
+      function compactMapName(name) {
+        const text = String(name || '').trim();
+        return text ? `карта: ${text}` : 'карта загружена';
+      }
+
+
+      function toast(message) {
+        window.clearTimeout(toastTimer);
+        els.toast.textContent = message;
+        els.toast.classList.add('visible');
+        toastTimer = window.setTimeout(() => els.toast.classList.remove('visible'), 2500);
+      }
+    })();
+  </script>
+</body>
+</html>
